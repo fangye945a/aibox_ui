@@ -57,6 +57,12 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          # 关键：仓库若尚未创建 Pages 站点，GET /repos/{owner}/{repo}/pages 会返回 404，
+          # configure-pages 默认就报 "Get Pages site failed" 而中断。
+          # enablement: true 会改为调用 POST 接口自动创建站点（build_type=workflow），
+          # 从而无需在网页设置里手动开启。需要下方 jobs.build 具备 pages: write 权限。
+          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
