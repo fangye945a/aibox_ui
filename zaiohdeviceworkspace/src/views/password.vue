@@ -1,7 +1,7 @@
 <template>
   <div class="passwordCon">
     <searchBar />
-    <p class="note"><el-icon color='#007CF7' size='17'><InfoFilled /></el-icon>&nbsp;请注意保护好您的本地控制台登录密码，定期修改。</p>
+    <p class="note"><el-icon color='#007CF7' size='17'><InfoFilled /></el-icon>&nbsp;仅修改当前标签页的演示密码，请勿输入真实设备密码。</p>
     <div class="updpwd">
             <div class="pwd-row">
               <p class="pwd-con">当前密码：</p>

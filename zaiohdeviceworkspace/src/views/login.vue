@@ -18,13 +18,16 @@
       </el-form>
       
       <el-button size='large' type="primary" native-type="button" @click="handleCurrentChange" style="width:100%;margin-top:25px;">登 录</el-button>
-      <p class="note">初始账号和密码请联系销售人员，注意账号资料的保密，并经常修改密码</p>
+      <p class="note">演示账号：demo，初始密码：Demo1234</p>
+      <el-button type="primary" link size="small" @click="restorePassword">恢复初始演示密码</el-button>
     </div>
     </div>
   </div>
 </template>
 <script setup>
 import { storage } from '@/demo/storage';
+import { resetDemoPassword } from '@/demo/data';
+import { ElMessage } from 'element-plus';
 import {
   User,
   Lock,
@@ -46,6 +49,13 @@ const form=reactive({
 
 const formRef=ref()
 let submitting = false;
+function restorePassword() {
+  resetDemoPassword();
+  form.user_name = 'demo';
+  form.password = '';
+  formRef.value?.clearValidate();
+  ElMessage.success('已恢复初始演示密码');
+}
 const handleCurrentChange=()=> {
   if (submitting) return;
   

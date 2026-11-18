@@ -2,7 +2,7 @@
 
 Vue 3 + Element Plus 旧工程（`../src`）的 React 19 全量重构版本，与旧工程**并行共存**，产物可直接替换现网 `dist`。
 
-原版 Vue 控制台演示发布在 [GitHub Pages 的独立页面](https://fangye945a.github.io/aibox_ui/zaiohdeviceworkspace/)，页面和素材取自 `zaiohdeviceworkspace` 的 `f4f7e75`。使用 `demo / Demo1234` 登录。页面使用浏览器内的示例设备、监控和日志数据，远程桌面、实际固件升级和设备密码修改需要真机。
+原版 Vue 控制台演示发布在 [GitHub Pages 的独立页面](https://fangye945a.github.io/aibox_ui/zaiohdeviceworkspace/)，页面和素材取自 `zaiohdeviceworkspace` 的 `f4f7e75`。使用 `demo / Demo1234` 登录，可体验模拟远程桌面、样例固件升级、改密和六项监控曲线。模拟升级任务和改密仅在当前浏览器标签页生效；可在登录页恢复初始演示密码。
 
 本地可运行 `npm run build:demo`、`npm run build:workspace-demo`，再静态托管 `dist`，访问 `/zaiohdeviceworkspace/`。
 

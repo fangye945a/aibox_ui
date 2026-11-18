@@ -1,7 +1,7 @@
 <template>
   <section class="monitor-chart-panel" :style="{'--metric-color': color}">
     <div class="panel-heading">
-      <div><h2>{{ title }}</h2><p>真实采样 · 每5秒更新 · {{ percent ? '使用率' : '传输速率' }}</p></div>
+      <div><h2>{{ title }}</h2><p>模拟采样 · 每5秒更新 · {{ percent ? '使用率' : '传输速率' }}</p></div>
       <span class="mode-badge" :class="{live: live && !error, failed: error}">
         {{ error ? '更新失败' : live ? '实时监控' : historical ? '历史回看' : '已暂停' }}
       </span>
@@ -65,7 +65,7 @@
         <p v-if="stats.gaps">区间存在 {{ stats.gaps }} 处超过15秒的采样间断，曲线断开，间断不计入连续时长。</p>
         <p v-if="live && stale" class="error-text">最新采样已超过15秒未更新，请检查设备采集状态。</p>
       </template>
-      <div class="data-note">最近成功查询：{{ fetchedAt ? formatTime(fetchedAt) : '--' }} · 历史最多保留24小时，Web服务重启后重新积累。
+      <div class="data-note">最近成功查询：{{ fetchedAt ? formatTime(fetchedAt) : '--' }} · 单次查询最多展示24小时的模拟采样。
         <br>参考线用于观察负载，不是故障判定；进程归因、内存泄漏及I/O瓶颈需结合进程信息和日志分析。</div>
     </div>
   </section>

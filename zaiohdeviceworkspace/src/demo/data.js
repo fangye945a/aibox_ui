@@ -14,6 +14,9 @@
  */
 
 import { strToU8, zipSync } from 'fflate';
+import { sha256 } from '@noble/hashes/sha256';
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils';
+import { demoOta } from './ota';
 
 let bootTime = Date.now() - 297120000;
 let logPath = '/data/log/demo';
@@ -59,12 +62,24 @@ function systemInfo() {
 function monitoringData({ start_time: start, end_time: end, type }) {
   const endTime = Math.min(Date.parse(end), Date.now());
   const startTime = Math.max(Date.parse(start), endTime - 24 * 3600000);
-  const bases = { cpu_usage: 37, cpu_temperature: 52, memory_used: 43, uplink_network: 820, downstream_network: 1450, disk_read_rate: 210, disk_write_rate: 95 };
-  const base = bases[type] ?? 30;
+  const profiles = {
+    cpu_usage: [37, 8, 45, 0],
+    memory_used: [43, 3, 11, 0.8],
+    uplink_network: [820, 210, 590, 1.3],
+    downstream_network: [1450, 340, 1320, 1.7],
+    disk_read_rate: [210, 67, 380, 2.2],
+    disk_write_rate: [95, 28, 260, 2.9]
+  };
   const points = [];
+  if (!Object.hasOwn(profiles, type)) {
+    return { [type]: points };
+  }
+  const [base, variation, peak, phase] = profiles[type];
   for (let time = Math.ceil(startTime / 5000) * 5000; time <= endTime; time += 5000) {
-    const wave = 1 + 0.21 * Math.sin(time / 73000) + 0.12 * Math.sin(time / 23000);
-    points.push({ time: new Date(time).toISOString(), value: Number((base * wave).toFixed(2)) });
+    const wave = Math.sin(time / 52000 + phase) + 0.4 * Math.sin(time / 12000 + phase);
+    const burst = Math.max(0, Math.cos(time / 25000 + phase)) ** 8;
+    const value = base + variation * wave + peak * burst;
+    points.push({ time: new Date(time).toISOString(), value: Number(value.toFixed(2)) });
   }
   return { [type]: points };
 }
@@ -93,10 +108,25 @@ function downloadLogs(files = []) {
 
 const DEMO_USER = 'demo';
 const DEMO_PASSWORD = 'Demo1234';
+const PASSWORD_KEY = 'zaioh-workspace:demo-password';
 const demoToken = 'workspace-demo';
 const unavailable = '演示站点未连接真实设备';
 const ok = data => ({ code: 0, msg: 'success', data });
 const error = msg => ({ code: 1, msg });
+
+const passwordDigest = password => bytesToHex(sha256(utf8ToBytes(password)));
+
+function matchesPassword(password) {
+  if (typeof password !== 'string') {
+    return false;
+  }
+  const digest = sessionStorage.getItem(PASSWORD_KEY);
+  return digest ? passwordDigest(password) === digest : password === DEMO_PASSWORD;
+}
+
+export function resetDemoPassword() {
+  sessionStorage.removeItem(PASSWORD_KEY);
+}
 
 export async function demoAdapter(config) {
   const path = new URL(config.url, window.location.origin).pathname;
@@ -104,7 +134,8 @@ export async function demoAdapter(config) {
   let data;
   switch (path) {
     case '/api/login':
-      data = body.user_name === DEMO_USER && body.password === DEMO_PASSWORD ? ok({ token: demoToken }) : error('请使用演示账号 demo / Demo1234');
+      data = body.user_name === DEMO_USER && matchesPassword(body.password) ?
+        ok({ token: demoToken }) : error('演示账号或密码不正确');
       break;
     case '/api/system/info':
       data = ok(systemInfo());
@@ -138,8 +169,27 @@ export async function demoAdapter(config) {
     case '/api/remote/vnc/config':
       data = ok({ server: '192.0.2.26', port: 5900 });
       break;
-    case '/api/logout':
+    case '/api/remote/connect':
+      await new Promise(resolve => setTimeout(resolve, 350));
+      data = ok({ connection_id: 'demo-vnc', url: new URL('./remote-desktop/index.html', window.location.href).href });
+      break;
     case '/api/password/verify':
+      data = matchesPassword(body.current_password) ? ok(true) : error('当前演示密码不正确');
+      break;
+    case '/api/password/change':
+      if (!matchesPassword(body.current_password)) {
+        data = error('当前演示密码不正确');
+      } else if (typeof body.new_password !== 'string' || body.new_password.length < 8 || body.new_password.length > 20) {
+        data = error('新密码须为 8 至 20 位');
+      } else if (body.new_password === body.current_password) {
+        data = error('新密码须与当前密码不同');
+      } else {
+        sessionStorage.setItem(PASSWORD_KEY, passwordDigest(body.new_password));
+        data = ok(true);
+      }
+      break;
+    case '/api/logout':
+    case '/api/remote/disconnect':
     case '/api/logs/dmesg':
     case '/api/logs/hilog':
     case '/api/sse/disconnect':
@@ -152,19 +202,17 @@ export async function demoAdapter(config) {
   return { data, status: 200, statusText: 'OK', headers: {}, config };
 }
 
-export async function demoFetch(path, options) {
-  options?.signal?.throwIfAborted();
-  const authorized = options?.headers?.Authorization === `Bearer ${demoToken}`;
+export async function demoFetch(path, options = {}) {
+  options.signal?.throwIfAborted();
+  const authorized = options.headers?.Authorization === `Bearer ${demoToken}`;
+  if (path.startsWith('/api/ota/')) {
+    return authorized ? demoOta(path.slice('/api/ota'.length), options) : Response.json({}, { status: 401 });
+  }
   switch (path) {
     case '/api/auth/status':
       return Response.json({ isLoggedIn: authorized });
     case '/api/system/info':
       return authorized ? Response.json(ok(systemInfo())) : Response.json({}, { status: 401 });
-    case '/api/ota/uploads':
-      if (!options?.method || options.method === 'GET') {
-        return Response.json({ uploads: [] });
-      }
-      break;
     default:
       break;
   }

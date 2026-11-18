@@ -5,7 +5,7 @@
     <div class="ota-content">
       <div class="sysup-top">
         <img src="@/assets/img/icon.png" alt="">
-        <p class="sysup-top-font">上传并校验通过后，设备将自动升级并重启。<br>升级期间请勿断电。</p>
+        <p class="sysup-top-font">模拟升级演示。可以使用内置升级包，文件处理和任务进度都留在当前浏览器。</p>
       </div>
       <div class="up-box" :class="{'is-disabled': busy || jobActive}">
         <div class="up-box-center">
@@ -50,6 +50,8 @@
       </div>
       <p v-if="message !== '请选择升级文件。'" class="up-status" role="status">{{ message }}</p>
       <div class="up-actions">
+        <el-button :disabled="busy || confirming || jobActive || (upload && upload.fileName !== demoFirmwareName)"
+                   @click="selectDemoFirmware">使用样例升级包</el-button>
         <el-button type="primary" :disabled="busy || confirming || jobActive || (!selectedFile && upload?.status !== 'ready') || upload?.status === 'checking'"
                    @click="startUpload">{{ upload?.status === 'ready' ? '开始升级' : upload?.offset ? '继续上传并升级' : '上传并升级' }}</el-button>
         <el-button v-if="busy" @click="pauseUpload">暂停上传</el-button>
@@ -63,7 +65,9 @@ import { storage } from '@/demo/storage';
 import {computed, onBeforeUnmount, onMounted, ref} from 'vue';
 import {ElMessage, ElMessageBox} from 'element-plus';
 import {otaRequest} from '@/api/ota';
+import { createDemoFirmware, DEMO_FIRMWARE_NAME } from '@/demo/ota';
 
+const demoFirmwareName = DEMO_FIRMWARE_NAME;
 const fileInput = ref(null);
 const selectedFile = ref(null);
 const upload = ref(null);
@@ -76,7 +80,7 @@ const hashPercent = ref(0);
 const chunkSize = ref(8 * 1024 * 1024);
 const transferSeconds = ref(0);
 const transferMBps = ref(0);
-const phaseNames = {uploading:'上传中', checking:'校验完整性', ready:'校验通过，可以开始升级', validating:'验签及升级准备', reboot_pending:'等待设备完成升级重启', verifying:'核验本轮升级结果', succeeded:'升级成功', failed:'升级失败', unknown:'结果待核对，禁止重复升级'};
+const phaseNames = {uploading:'上传中', checking:'校验完整性', ready:'校验通过，可以开始升级', validating:'模拟验签及升级准备', reboot_pending:'模拟设备重启中', verifying:'核验本轮模拟升级结果', succeeded:'模拟升级成功', failed:'模拟升级失败', unknown:'结果待核对，禁止重复升级'};
 const jobActive = computed(() => executing.value || (job.value && !['succeeded','failed'].includes(job.value.status)));
 const modifiedTime = computed(() => selectedFile.value ? new Date(selectedFile.value.lastModified).toLocaleString() : '');
 const percentage = computed(() => upload.value ? Math.min(100, Math.floor(upload.value.offset * 100 / upload.value.size)) : 0);
@@ -94,6 +98,13 @@ function formatSize(bytes) {
 function selectFile(event) {
     const file = event.target.files?.[0];
     if (!file) return;
+    pickFile(file);
+}
+function selectDemoFirmware() {
+    if (fileInput.value) fileInput.value.value = '';
+    pickFile(createDemoFirmware());
+}
+function pickFile(file) {
     if (!file.name.toLowerCase().endsWith('.zip')) { ElMessage.error('请选择 ZIP 格式的升级包'); return; }
     if (upload.value && (file.name !== upload.value.fileName || file.size !== upload.value.size)) {
         ElMessage.error('存在其他上传任务，请先删除任务，或重新选择原文件');
@@ -122,8 +133,8 @@ async function startUpload() {
     if (busy.value || confirming.value || jobActive.value || (!selectedFile.value && upload.value?.status !== 'ready')) return;
     confirming.value = true;
     try {
-        const prompt = upload.value?.status === 'ready' ? '设备将开始升级并自动重启。升级期间请勿断电，是否继续？'
-            : '文件上传并校验通过后，设备将自动升级并重启。升级期间请勿断电，是否继续？';
+        const prompt = upload.value?.status === 'ready' ? '开始模拟升级和重启，是否继续？'
+            : '将在当前浏览器模拟上传、校验、升级和重启，是否继续？';
         await ElMessageBox.confirm(prompt, '系统升级', {type: 'warning', confirmButtonText: '继续', cancelButtonText: '取消'});
     } catch {
         return;
@@ -252,7 +263,7 @@ async function restore() {
             if (upload.value.status === 'ready' && autoUpgradeRequested) await executeUpgrade();
         }
     } catch (error) {
-        message.value = job.value ? '设备正在重启或连接暂不可用，等待重新连接。' : error.message;
+            message.value = error.message;
         if (job.value && job.value.status !== 'unknown') schedulePoll();
     }
 }

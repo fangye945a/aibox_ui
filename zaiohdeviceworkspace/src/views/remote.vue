@@ -20,7 +20,7 @@
       </div>
       <div class="connection-info">
         <span>服务器: {{ currentSettings.server }}:{{ currentSettings.port }}</span>
-        <span>协议: VNC</span>
+        <span>协议: VNC（模拟）</span>
       </div>
     </div>
 
@@ -34,9 +34,7 @@
         <div class="connection-tips">
           <h4>连接提示：</h4>
           <ul>
-            <li>确保网络连接正常</li>
-            <li>远程桌面服务已启用</li>
-            <li>防火墙允许VNC连接</li>
+            <li>点击“重新连接”打开模拟桌面</li>
           </ul>
         </div>
       </div>
@@ -48,8 +46,8 @@
         :src="remoteUrl"
         @load="watchDesktopState"
         class="remote-frame"
-        allow="fullscreen; autoplay; microphone; camera; display-capture; clipboard-read; clipboard-write"
-        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation allow-top-navigation-by-user-activation"
+        title="模拟远程桌面"
+        sandbox="allow-same-origin"
         referrerpolicy="no-referrer-when-downgrade">
       </iframe>
     </div>
@@ -150,13 +148,14 @@ const loadSettings = async () => {
     }
     currentSettings.value = { server: window.location.hostname, ...config.data };
     const response = await connect({
-      type: 'vnc', server: window.location.hostname, port: currentSettings.value.port
+      type: 'vnc', server: currentSettings.value.server, port: currentSettings.value.port
     });
     if (generation !== requestGeneration) {
       return;
     }
-    const url = new URL(response.data.url, window.location.origin);
-    if (url.origin !== window.location.origin || !url.pathname.startsWith('/remote-desktop/')) {
+    const url = new URL(response.data.url);
+    const expected = new URL('./remote-desktop/index.html', window.location.href);
+    if (url.href !== expected.href) {
       throw new Error('远程桌面地址无效');
     }
     connectionId.value = response.data.connection_id;
