@@ -31,6 +31,7 @@
         navList: [
           {label: '首页', rName: 'home',meta:{icon:'home'}, children: []},
           {label: '监控运维', rName: 'monitoring',meta:{icon:'jkyw'}, children: []},
+          {label: '视频识别', rName: 'videoRecognition',meta:{icon:'video'}, children: []},
           {label: '日志', rName: 'log',meta:{icon:'log'}, children: []},
           {label: '系统升级', rName: 'sysupdate',meta:{icon:'xtsj'}, children: []},
           {label: '修改密码', rName: 'password',meta:{icon:'xgmm'}, children: []},

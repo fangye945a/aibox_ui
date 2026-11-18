@@ -44,6 +44,12 @@ const routes = [
             unRequireLogin: false,
           }
         },
+        {
+          path: '/video-recognition',
+          name: 'videoRecognition',
+          component: () => import('@/views/videoRecognition.vue'),
+          meta: { title: '视频识别', unRequireLogin: false }
+        },
         //日志
         {
           path: '/log',

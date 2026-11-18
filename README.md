@@ -6,6 +6,8 @@ Vue 3 + Element Plus 旧工程（`../src`）的 React 19 全量重构版本，�
 
 本地可运行 `npm run build:demo`、`npm run build:workspace-demo`，再静态托管 `dist`，访问 `/zaiohdeviceworkspace/`。
 
+Vue 控制台侧栏的「视频识别」支持使用示例画面或本机摄像头。摄像头可选设备、分辨率和帧率；算法配置支持画面变化检测的灵敏度、最小变化面积、采样间隔和检测框。配置保存在当前浏览器，视频帧只在浏览器内处理。本机摄像头需要浏览器授权，请通过 HTTPS 或本机地址访问。
+
 ## 技术栈
 
 | 领域 | 选型 | 版本 |
