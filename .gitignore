@@ -1,6 +1,9 @@
 .DS_Store
 node_modules
 /dist
+/zaiohdeviceworkspace/dist
+/zaiohdeviceworkspace/auto-imports.d.ts
+/zaiohdeviceworkspace/components.d.ts
 *.tsbuildinfo
 
 # local env files

@@ -12,7 +12,8 @@
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
     "build:demo": "tsc -b && vite build --mode demo",
-    "preview:demo": "vite preview --mode demo"
+    "preview:demo": "vite preview --mode demo",
+    "build:workspace-demo": "npm ci --prefix zaiohdeviceworkspace && npm run build --prefix zaiohdeviceworkspace -- --dest ../dist/zaiohdeviceworkspace"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.6",

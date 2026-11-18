@@ -30,6 +30,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            zaiohdeviceworkspace/package-lock.json
 
       - name: Install dependencies
         # npm ci 需要 package-lock.json；若不存在则回退到 npm install
@@ -46,6 +49,9 @@ jobs:
       - name: Build (demo mode)
         # 使用 .env.demo：纯前端 Mock + base=/aibox_ui/
         run: npx vite build --mode demo
+
+      - name: Build original Vue console demo
+        run: npm run build:workspace-demo
 
       - name: Disable Jekyll
         # 下划线开头的文件默认被 Jekyll 忽略，加此文件跳过处理
