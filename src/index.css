@@ -1,0 +1,278 @@
+@import "tailwindcss";
+
+/* ============================================================
+   边缘本地控制台 · 样式还原
+   ------------------------------------------------------------
+   目标：像素级对齐原 Vue 工程（zaiohDeviceMMP-frontend/src）的视觉，
+        仅把实现技术栈换成 React 19 + Tailwind 4。
+
+   所有色值、字号、圆角、间距均从原工程 SCSS 中直接提取，
+   不做"优化"，不做"再设计"：
+
+     主色        #007CF7   (标题、按钮、图标、激活态)
+     主色浅底    rgba(0,124,247,0.05)
+     信息底      rgba(240,246,254,1)   = #F0F6FE
+     页面底色    #F2F4F5
+     卡片        #FFFFFF，圆角 12px
+     分隔线      #eee
+     正文        rgba(0,0,0,0.9)
+     次要文字    rgba(0,0,0,0.6)
+     成功        #67C23A
+     危险        #F56C6C
+     链接        #409eff
+     状态文字    #000
+
+   字号：14px 绝对主基调，18px 卡片标题，20px 页头标题，24px 数值
+   圆角：12px 卡片 / 8px 内块 / 6px 小元素 / 4px 标签
+   顶栏：48px；侧栏：220px 展开、64px 折叠；内容区：16px 24px
+   ============================================================ */
+
+@theme {
+  /* ── 原工程主色 ── */
+  --color-brand: #007cf7;
+  --color-brand-deep: #409eff;
+  --color-brand-soft: rgba(0, 124, 247, 0.05);
+  --color-brand-faint: rgba(0, 124, 247, 0.1);
+  --color-info-bg: #f0f6fe;
+
+  /* ── 页面与卡片 ── */
+  --color-canvas: #f2f4f5;
+  --color-card: #ffffff;
+  --color-line: #eeeeee;
+  --color-line-strong: #dcdcdc;
+  --color-block: #f5f7f9;
+
+  /* ── 文字 ── */
+  --color-t1: rgba(0, 0, 0, 0.9);
+  --color-t2: rgba(0, 0, 0, 0.6);
+  --color-t3: rgba(0, 0, 0, 0.4);
+  --color-t4: #666666;
+
+  /* ── 状态 ── */
+  --color-ok: #67c23a;
+  --color-warn: #e6a23c;
+  --color-danger: #f56c6c;
+  --color-link: #409eff;
+  --color-teal: rgba(0, 199, 199, 1);
+  --color-mint: rgba(5, 213, 180, 1);
+  --color-indigo: rgba(86, 86, 214, 1);
+
+  /* ── 字体：与原工程完全一致 ── */
+  --font-sans: "Microsoft YaHei", "微软雅黑", "Helvetica Neue", Helvetica,
+    "PingFang SC", "Hiragino Sans GB", Arial, sans-serif;
+
+  /* ── 圆角 ── */
+  --radius-card: 12px;
+  --radius-block: 8px;
+  --radius-sm: 6px;
+  --radius-xs: 4px;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 原 common.css 的 reset */
+  body {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: #000;
+    background: var(--color-canvas);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  div,
+  dl,
+  dt,
+  dd,
+  ul,
+  ol,
+  li,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  pre,
+  code,
+  form,
+  fieldset,
+  legend,
+  input,
+  textarea,
+  p,
+  blockquote,
+  th,
+  td {
+    margin: 0;
+    padding: 0;
+  }
+
+  ol,
+  ul {
+    list-style: none;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-size: 100%;
+    font-weight: normal;
+  }
+
+  em,
+  strong,
+  th {
+    font-style: normal;
+    font-weight: normal;
+  }
+
+  table {
+    border-spacing: 0;
+  }
+
+  fieldset,
+  img {
+    border: 0;
+  }
+
+  a {
+    text-decoration: none;
+  }
+
+  button[disabled] {
+    cursor: not-allowed !important;
+  }
+
+  /* 数字对齐 */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 滚动条：贴合原工程页面观感 */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.16);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer components {
+  /* ── 卡片：白底 12px 圆角，与原工程各页面 .xxx-box 一致 ── */
+  .card {
+    background: #fff;
+    border-radius: var(--radius-card);
+    padding: 10px;
+  }
+
+  /* 带内边距更充足的卡片（原 .home-center-box-* 是 p:10px） */
+  .card-pad {
+    background: #fff;
+    border-radius: var(--radius-card);
+    padding: 16px;
+  }
+
+  /* ── 卡片标题：18px / 500，原工程统一规格 ── */
+  .card-title {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--color-t1);
+    line-height: 1.4;
+  }
+
+  /* ── 表单行（原 .formclass / .pdflex）── */
+  .kv-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid var(--color-line);
+  }
+  .kv-row:last-child {
+    border-bottom: none;
+  }
+  .kv-key {
+    font-size: 14px;
+    font-weight: 400;
+    color: #000;
+  }
+  .kv-val {
+    font-size: 14px;
+    font-weight: 500;
+    color: #000;
+    text-align: right;
+  }
+
+  /* ── 状态点：8px 圆点（原 .status-dot 是 8px）── */
+  .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: none;
+  }
+
+  /* ── 提示条（原 .sysup-top / .log-top / .note）── */
+  .notice {
+    display: flex;
+    align-items: center;
+    background: var(--color-info-bg);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--color-t1);
+  }
+
+  /* ── 主按钮（原 .btn-primary）── */
+  .btn-el-primary {
+    color: #fff;
+    font-size: 14px;
+    line-height: 14px;
+    border-radius: 2px;
+    background-color: #1890ff;
+    padding: 9px 10px;
+    min-width: 60px;
+    text-align: center;
+    cursor: pointer;
+  }
+  .btn-el-primary:hover {
+    background-color: #62a2fa;
+  }
+}
+
+/* ── 悬停/激活的克制反馈，不引入额外动效 ── */
+@layer utilities {
+  .hover-lift {
+    transition: background-color 150ms ease-out, border-color 150ms ease-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
