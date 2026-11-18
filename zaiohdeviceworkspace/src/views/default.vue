@@ -93,4 +93,10 @@
       // }
     }
   }
+  @media (max-width: 620px) {
+    .vl-content:has(> .video-nav-shell) > .content-box {
+      min-width: 0;
+      padding: 10px;
+    }
+  }
 </style>

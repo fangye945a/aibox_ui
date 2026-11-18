@@ -1,5 +1,5 @@
 <template>
-<div>
+<div :class="{ 'video-nav-shell': $route.name === 'videoRecognition' }">
   <p class="collapse"  @click='isCollapse=!isCollapse'>
       
         <svg-icon icon-class='open'></svg-icon>
@@ -31,7 +31,7 @@
         navList: [
           {label: '首页', rName: 'home',meta:{icon:'home'}, children: []},
           {label: '监控运维', rName: 'monitoring',meta:{icon:'jkyw'}, children: []},
-          {label: '视频识别', rName: 'videoRecognition',meta:{icon:'video'}, children: []},
+          {label: '视频分析', rName: 'videoRecognition',meta:{icon:'video'}, children: []},
           {label: '日志', rName: 'log',meta:{icon:'log'}, children: []},
           {label: '系统升级', rName: 'sysupdate',meta:{icon:'xtsj'}, children: []},
           {label: '修改密码', rName: 'password',meta:{icon:'xgmm'}, children: []},
@@ -53,6 +53,9 @@
     methods: {
 
       goToPage(item) {
+        if (item.rName === 'videoRecognition' && window.matchMedia('(max-width: 620px)').matches) {
+          this.isCollapse = true;
+        }
         this.$router.push({name: item.rName,params:{title:item.label}});
         
       },
@@ -150,5 +153,26 @@
       padding: 0px;
       display: flex;
       justify-content: center;
+    }
+
+    @media (max-width: 620px) {
+      .video-nav-shell {
+        flex: 0 0 64px;
+        position: relative;
+      }
+      .video-nav-shell .vl-slide:not(.el-menu--collapse) {
+        position: absolute;
+        z-index: 8;
+        box-shadow: 3px 0 10px rgb(43 63 92 / 12%);
+      }
+      .vl-main:has(.video-nav-shell) .vl-header .logo {
+        padding-right: 8px;
+        margin-right: 0;
+        font-size: 15px;
+        white-space: nowrap;
+      }
+      .vl-main:has(.video-nav-shell) .vl-header .headTxt {
+        padding-right: 10px;
+      }
     }
 </style>
