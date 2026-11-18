@@ -40,6 +40,16 @@
         isCollapse:false,
       }
     },
+    watch: {
+      '$route.name': {
+        immediate: true,
+        handler(name) {
+          if (name === 'videoRecognition' && window.matchMedia('(max-width: 620px)').matches) {
+            this.isCollapse = true;
+          }
+        },
+      },
+    },
     methods: {
 
       goToPage(item) {
