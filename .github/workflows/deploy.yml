@@ -30,36 +30,17 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            zaiohdeviceworkspace/package-lock.json
+          cache-dependency-path: zaiohdeviceworkspace/package-lock.json
 
-      - name: Install dependencies
-        # npm ci 需要 package-lock.json；若不存在则回退到 npm install
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
-
-      - name: Type check
-        run: npx tsc -b
-
-      - name: Build (demo mode)
-        # 使用 .env.demo：纯前端 Mock + base=/aibox_ui/
-        run: npx vite build --mode demo
-
-      - name: Build original Vue console demo
+      - name: Build AIBox console at Pages root
         run: npm run build:workspace-demo
+
+      - name: Check AIBox console source
+        run: npm --prefix zaiohdeviceworkspace run typecheck
 
       - name: Disable Jekyll
         # 下划线开头的文件默认被 Jekyll 忽略，加此文件跳过处理
         run: touch dist/.nojekyll
-
-      - name: Add 404 fallback
-        # 项目用 hash 路由，天然不会 404；仍提供兜底页以防直接访问子路径
-        run: cp dist/index.html dist/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

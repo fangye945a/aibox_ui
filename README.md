@@ -2,9 +2,9 @@
 
 Vue 3 + Element Plus 旧工程（`../src`）的 React 19 全量重构版本，与旧工程**并行共存**，产物可直接替换现网 `dist`。
 
-原版 Vue 控制台演示发布在 [GitHub Pages 的独立页面](https://fangye945a.github.io/aibox_ui/zaiohdeviceworkspace/)，页面和素材取自 `zaiohdeviceworkspace` 的 `f4f7e75`。使用 `demo / Demo1234` 登录，可体验模拟远程桌面、样例固件升级、改密和六项监控曲线。模拟升级任务和改密仅在当前浏览器标签页生效；可在登录页恢复初始演示密码。
+GitHub Pages 根地址提供新版 Vue 控制台演示。使用 `demo / Demo1234` 登录后进入视频分析，也可体验模拟远程桌面、样例固件升级、改密和监控曲线。模拟升级任务和改密仅在当前浏览器标签页生效，可在登录页恢复初始演示密码。[打开演示](https://fangye945a.github.io/aibox_ui/)
 
-本地可运行 `npm run build:demo`、`npm run build:workspace-demo`，再静态托管 `dist`，访问 `/zaiohdeviceworkspace/`。
+本地运行 `npm run build:workspace-demo`，将 `dist` 作为静态站点根目录即可预览 Pages 演示。
 
 Vue 控制台的「视频分析」包含实时检测、检测记录、通道配置和模型管理。实时页可暂停预览、控制模拟任务，或跳到对应通道的配置、记录及诊断。记录和统计共用筛选条件，记录可导出为 CSV 或下载标注 PNG。模型管理可暂存并验证演示模型，通过后可在通道配置中绑定。「监控运维」集中展示整机状态和视频诊断。
 

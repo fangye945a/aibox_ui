@@ -3,6 +3,8 @@ import store from '@/store/';
 import { demoFetch } from '@/demo/data';
 import { storage } from '@/demo/storage';
 
+const PAGES_DEMO = process.env.VUE_APP_PAGES_DEMO === 'true';
+
 const routes = [
     // {
     //   path: '*',
@@ -21,11 +23,14 @@ const routes = [
         unRequireLogin: false
       },
       redirect: {
-        name: 'home'
+        name: PAGES_DEMO ? 'videoRecognition' : 'home'
       },
       children: [
-        //首页
-        {
+        // 旧演示书签统一跳转到视频分析。
+        PAGES_DEMO ? {
+          path: '/home',
+          redirect: { name: 'videoRecognition' }
+        } : {
           path: '/home',
           name: 'home',
           component: () => import('@/views/home.vue'),

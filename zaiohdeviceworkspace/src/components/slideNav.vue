@@ -24,7 +24,8 @@
   </div>
 </template>
 <script>
- 
+  const PAGES_DEMO = process.env.VUE_APP_PAGES_DEMO === 'true';
+
   export default {
     data() {
       return {
@@ -36,7 +37,7 @@
           {label: '系统升级', rName: 'sysupdate',meta:{icon:'xtsj'}, children: []},
           {label: '修改密码', rName: 'password',meta:{icon:'xgmm'}, children: []},
           {label: '远程桌面', rName: 'remote',meta:{icon:'yczm'}, children: []},
-        ],
+        ].filter(item => !PAGES_DEMO || item.rName !== 'home'),
         isCollapse:false,
       }
     },
