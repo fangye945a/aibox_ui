@@ -10,8 +10,14 @@
  limitations under the License.
 -->
 <template>
-    <section class="video-section" :aria-label="statistics ? '数据统计' : '检测记录'">
-        <h2>{{ statistics ? '统计范围' : '检索检测记录' }}</h2>
+    <section class="video-section" aria-label="检测记录">
+        <div class="video-heading">
+            <h2>检索检测记录</h2>
+            <el-radio-group v-model="view" aria-label="记录视图">
+                <el-radio-button value="records">记录</el-radio-button>
+                <el-radio-button value="statistics">统计</el-radio-button>
+            </el-radio-group>
+        </div>
         <el-form class="video-filter" label-position="top" @submit.prevent="ApplyFilters">
             <el-form-item label="通道">
                 <el-select v-model="draft.channel" aria-label="通道">
@@ -19,7 +25,7 @@
                     <el-option v-for="channel in workspace.channels" :key="channel.id" :label="channel.name" :value="channel.id" />
                 </el-select>
             </el-form-item>
-            <el-form-item v-if="!statistics" label="关键词">
+            <el-form-item label="关键词">
                 <el-input v-model="draft.query" aria-label="关键词" clearable placeholder="搜索检测记录" />
             </el-form-item>
             <el-form-item label="开始时间（本地）" for="video-filter-start">
@@ -122,9 +128,11 @@ import { FilterVideoRecords } from '@/demo/video-workspace';
 
 const PAGE_SIZE = 50;
 const EMPTY_FILTERS = { channel: '', query: '', start: '', end: '' };
-const props = defineProps({ workspace: Object, statistics: Boolean });
+const props = defineProps({ workspace: Object, initialChannel: String });
 const draft = reactive({ ...EMPTY_FILTERS });
 const applied = ref({ ...EMPTY_FILTERS });
+const view = ref('records');
+const statistics = computed(() => view.value === 'statistics');
 const page = ref(1);
 const records = computed(() => FilterVideoRecords(props.workspace, applied.value));
 const pageRows = computed(() => records.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE));
@@ -216,4 +224,9 @@ function SaveSnapshot() {
 watch(() => records.value.length, count => {
     page.value = Math.min(page.value, Math.max(1, Math.ceil(count / PAGE_SIZE)));
 });
+watch(() => props.initialChannel, channel => {
+    draft.channel = channel || '';
+    applied.value = { ...applied.value, channel: draft.channel };
+    page.value = 1;
+}, { immediate: true });
 </script>

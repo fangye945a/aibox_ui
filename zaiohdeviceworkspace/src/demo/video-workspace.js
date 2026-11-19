@@ -15,8 +15,10 @@
 
 import { markRaw, reactive } from 'vue';
 import { storage } from './storage';
-import { DetectionLabel, ModelDetections } from './video-recognition';
+import { DetectionLabel, IsDemoRtspAddress, ModelDetections } from './video-recognition';
+import { CompareFrames, DrawSample, SAMPLE_HEIGHT, SAMPLE_WIDTH } from '@/utils/video-motion';
 
+export const VIDEO_WORKSPACE = Symbol('video-workspace');
 const CONFIG_KEY = 'video-workspace';
 const SAMPLE_COUNT = 100;
 const RECORD_LIMIT = 400;
@@ -44,7 +46,7 @@ function MakeChannel(id, name, modelId, saved) {
         },
         algorithm: { mode: 'model', confidence: 0.25, nmsIou: 0.45, showBox: true,
             sensitivity: 60, minArea: 0.8, interval: 250, ...algorithm, ...saved?.algorithm },
-        state: 'stopped', frame: null, fps: 0, error: '', session: 0
+        state: 'stopped', frame: null, fps: 0, error: '', lastFailure: '', failedAt: null, startedAt: null, retries: 0
     };
 }
 
@@ -110,6 +112,134 @@ export function CreateVideoWorkspace() {
             timestamp: now - (30 - index) * 2000, ...FrameTimings(id, index)
         })))
     });
+}
+
+/** @brief 区分依赖浏览器授权或文件的本地预览和模拟板端输入。 */
+export function IsBrowserSource(source) {
+    return (source.type === 'usb' && source.realUsb) || (source.type === 'mp4' && source.sourceId !== 'sample');
+}
+
+/** @brief 返回视频源的配置错误，空字符串表示可用于演示。 */
+export function VideoSourceError(workspace, source) {
+    if (source.type === 'rtsp' && !IsDemoRtspAddress(source.rtspUrl)) {
+        return '请输入不含账号和密码的有效 RTSP 地址';
+    }
+    if (source.type === 'mp4' && !workspace.sources.some(item => item.id === source.sourceId)) {
+        return '视频文件不可用，请重新添加本地 MP4 或选择内置示例';
+    }
+    if (source.type === 'usb' && !source.realUsb && (!Number.isInteger(source.cameraIndex) || source.cameraIndex < 0 || source.cameraIndex > 63)) {
+        return '请输入 0–63 的 USB 摄像头编号';
+    }
+    return '';
+}
+
+/** @brief 返回视频源名称，供预览和运维使用。 */
+export function VideoSourceName(workspace, source) {
+    if (source.type === 'mp4') {
+        return workspace.sources.find(item => item.id === source.sourceId)?.name ?? '本地 MP4 文件不可用';
+    }
+    if (source.type === 'rtsp') {
+        return 'RTSP 摄像头（模拟）';
+    }
+    return source.realUsb ? '浏览器本机摄像头' : `AIBox USB ${source.cameraIndex}（模拟）`;
+}
+
+/** @brief 返回通道任务状态，浏览器输入只提供本地预览。 */
+export function VideoChannelStatus(channel) {
+    if (IsBrowserSource(channel.source)) {
+        return '浏览器本地输入';
+    }
+    return { stopped: '已停止', running: '运行中', error: '输入故障' }[channel.state];
+}
+
+/** @brief 保留最近故障原因，便于通道恢复后继续排查。 */
+export function FailVideoChannel(channel, reason) {
+    Object.assign(channel, { state: 'error', frame: null, fps: 0, error: reason, lastFailure: reason, failedAt: Date.now() });
+}
+
+/** @brief 启动或重连模拟 AIBox 通道。 */
+export function StartVideoChannel(workspace, channel) {
+    const error = VideoSourceError(workspace, channel.source);
+    if (error) {
+        FailVideoChannel(channel, error);
+        return;
+    }
+    if (IsBrowserSource(channel.source)) {
+        return;
+    }
+    if (channel.state === 'error') {
+        channel.retries++;
+    }
+    Object.assign(channel, { state: 'running', frame: null, fps: 0, error: '', startedAt: performance.now() });
+}
+
+/** @brief 显式停止对应模拟通道，保留诊断历史。 */
+export function StopVideoChannel(channel) {
+    Object.assign(channel, { state: 'stopped', frame: null, fps: 0, error: '', startedAt: null });
+}
+
+function SampleMotion(runtime, elapsed, algorithm) {
+    if (!runtime.canvas) {
+        const canvas = document.createElement('canvas');
+        canvas.width = SAMPLE_WIDTH;
+        canvas.height = SAMPLE_HEIGHT;
+        runtime.canvas = canvas.getContext('2d', { willReadFrequently: true });
+    }
+    if (elapsed - runtime.lastMotion >= algorithm.interval) {
+        DrawSample(runtime.canvas, SAMPLE_WIDTH, SAMPLE_HEIGHT, elapsed);
+        const pixels = runtime.canvas.getImageData(0, 0, SAMPLE_WIDTH, SAMPLE_HEIGHT).data;
+        const region = runtime.pixels ? CompareFrames(runtime.pixels, pixels, algorithm.sensitivity) : null;
+        Object.assign(runtime, { pixels, lastMotion: elapsed, region });
+    }
+    const region = runtime.region;
+    const detections = region && region.percent >= algorithm.minArea ? [{
+        kind: 'motion', score: null, x: region.x * 640, y: region.y * 360, width: region.width * 640, height: region.height * 360
+    }] : [];
+    return { detections, motion: region?.percent ?? 0 };
+}
+
+function RunFrame(workspace, channel, runtime, now) {
+    if (channel.state !== 'running') {
+        return;
+    }
+    if (runtime.startedAt !== channel.startedAt) {
+        Object.assign(runtime, { startedAt: channel.startedAt, lastFrame: now, lastRecord: -Infinity, lastMotion: -Infinity, pixels: null, region: null });
+    }
+    const elapsed = Math.round(now - channel.startedAt);
+    const { mode } = channel.algorithm;
+    const result = mode === 'motion' ? SampleMotion(runtime, elapsed, channel.algorithm) : { detections: [], motion: null };
+    if (mode === 'model') {
+        result.detections = ModelDetections(elapsed, { ...channel.algorithm, channelId: channel.id });
+    }
+    const sequence = ++runtime.sequence;
+    const frame = { sequence, elapsed, mode, ...result, width: 640, height: 360, inputWidth: 640, inputHeight: 360,
+        modelId: mode === 'model' ? channel.modelId : null, timings: mode === 'model' ? FrameTimings(channel.id, sequence) : null };
+    channel.fps = Math.min(13, Math.round(1000 / Math.max(1, now - runtime.lastFrame)));
+    runtime.lastFrame = now;
+    channel.frame = frame;
+    if (frame.timings && frame.detections.length && elapsed - runtime.lastRecord >= 12000) {
+        runtime.lastRecord = elapsed;
+        AddVideoRecord(workspace, channel, frame);
+    }
+}
+
+/** @brief 在已登录的控制台内模拟板端任务，路由切换不会销毁通道。 */
+export function RunVideoWorkspace(workspace) {
+    const runtimes = workspace.channels.map(() => ({ sequence: 0 }));
+    for (const channel of workspace.channels) {
+        if (channel.autostart && !IsBrowserSource(channel.source)) {
+            StartVideoChannel(workspace, channel);
+        }
+    }
+    const frames = setInterval(() => {
+        const now = performance.now();
+        workspace.channels.forEach((channel, index) => RunFrame(workspace, channel, runtimes[index], now));
+    }, 80);
+    const performanceTimer = setInterval(() => SamplePerformance(workspace), 2000);
+    return () => {
+        clearInterval(frames);
+        clearInterval(performanceTimer);
+    };
 }
 
 /** @brief 保存通道和模型元数据，避免把本地视频或模型文件写入持久配置。 */

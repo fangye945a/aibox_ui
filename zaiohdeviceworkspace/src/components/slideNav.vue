@@ -1,5 +1,5 @@
 <template>
-<div :class="{ 'video-nav-shell': $route.name === 'videoRecognition' }">
+<div :class="{ 'video-nav-shell': ['videoRecognition', 'monitoring'].includes($route.name) }">
   <p class="collapse"  @click='isCollapse=!isCollapse'>
       
         <svg-icon icon-class='open'></svg-icon>
@@ -44,7 +44,7 @@
       '$route.name': {
         immediate: true,
         handler(name) {
-          if (name === 'videoRecognition' && window.matchMedia('(max-width: 620px)').matches) {
+          if (['videoRecognition', 'monitoring'].includes(name) && window.matchMedia('(max-width: 620px)').matches) {
             this.isCollapse = true;
           }
         },
@@ -53,7 +53,7 @@
     methods: {
 
       goToPage(item) {
-        if (item.rName === 'videoRecognition' && window.matchMedia('(max-width: 620px)').matches) {
+        if (['videoRecognition', 'monitoring'].includes(item.rName) && window.matchMedia('(max-width: 620px)').matches) {
           this.isCollapse = true;
         }
         this.$router.push({name: item.rName,params:{title:item.label}});

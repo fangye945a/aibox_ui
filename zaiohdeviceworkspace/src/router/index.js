@@ -48,7 +48,7 @@ const routes = [
           path: '/video-recognition',
           name: 'videoRecognition',
           component: () => import('@/views/videoRecognition.vue'),
-          meta: { title: '视频识别', unRequireLogin: false }
+          meta: { title: '视频分析', unRequireLogin: false }
         },
         //日志
         {

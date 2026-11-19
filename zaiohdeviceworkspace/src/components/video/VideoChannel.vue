@@ -13,136 +13,71 @@
     <section class="video-panel" :class="{ 'video-selected': selected }" :aria-label="channel.name">
         <div class="video-heading">
             <h2><el-button text :type="selected ? 'primary' : ''" :aria-pressed="selected" @click="$emit('select')">{{ channel.name }}</el-button></h2>
-            <el-tag size="small" :type="statusType">{{ status }}</el-tag>
+            <el-tag v-if="!previewOnly" size="small" :type="stateType">{{ VideoChannelStatus(channel) }}</el-tag>
         </div>
         <div ref="picture" class="video-picture" @click="$emit('select')" @dblclick="Fullscreen">
             <canvas ref="canvas" :width="WIDTH" :height="HEIGHT" :aria-label="`${channel.name}实时画面`"></canvas>
-            <video ref="video" muted playsinline hidden @ended="Complete" @error="VideoFailed"></video>
-            <div v-if="channel.state !== 'running' && channel.state !== 'completed'" class="video-placeholder">
-                <el-icon :size="28"><VideoCamera /></el-icon>
-                {{ status }}
-            </div>
+            <video ref="video" muted playsinline hidden @ended="Complete" @error="MediaFailed"></video>
+            <div v-if="placeholder" class="video-placeholder"><el-icon :size="28"><VideoCamera /></el-icon>{{ placeholder }}</div>
             <el-button class="video-fullscreen" :icon="FullScreen" title="全屏" aria-label="全屏" circle size="small" @click.stop="Fullscreen" />
         </div>
-        <div class="video-heading video-preview-info">
-            <span>{{ sourceText }} · 预览 {{ channel.fps }} FPS</span>
-            <el-button v-if="active || channel.state === 'completed' || channel.state === 'error'" :icon="VideoPause" size="small" @click="Stop">停止检测</el-button>
-            <el-button v-else :icon="VideoPlay" size="small" type="primary" @click="Start">启动检测</el-button>
+        <p class="video-muted">{{ VideoSourceName(workspace, channel.source) }} · 预览 {{ browserSource ? localFps : paused ? 0 : channel.fps }} FPS</p>
+        <p v-if="localState === 'completed'" class="video-muted">本地视频播放完成</p>
+        <el-alert v-if="channel.error || localError" :title="channel.error || localError" type="error" :closable="false" show-icon />
+        <div v-if="!previewOnly || browserSource" class="video-actions">
+            <el-button size="small" @click="TogglePreview">{{ previewAction }}</el-button>
+            <el-button v-if="!previewOnly && !browserSource" size="small" :type="channel.state !== 'running' ? 'primary' : ''" @click="ToggleTask">
+                {{ { running: '停止检测', stopped: '启动检测', error: '重连检测' }[channel.state] }}
+            </el-button>
         </div>
-        <el-alert v-if="channel.error" :title="channel.error" type="error" :closable="false" show-icon />
-        <h3>视频源</h3>
-        <el-form class="video-form" label-position="top" @submit.prevent="SaveSource">
-            <el-form-item label="视频源类型">
-                <el-select v-model="draft.type" aria-label="视频源类型">
-                    <el-option label="本地 MP4 视频" value="mp4" />
-                    <el-option label="RTSP 网络摄像头（模拟）" value="rtsp" />
-                    <el-option v-if="channel.id === 'person'" label="USB 摄像头" value="usb" />
-                </el-select>
-            </el-form-item>
-            <template v-if="draft.type === 'mp4'">
-                <el-form-item label="MP4 视频源">
-                    <el-select v-model="draft.sourceId" aria-label="MP4 视频源" placeholder="选择视频">
-                        <el-option v-for="source in workspace.sources" :key="source.id" :label="source.name" :value="source.id" />
-                    </el-select>
-                </el-form-item>
-                <el-checkbox v-model="draft.loop">循环播放 MP4</el-checkbox>
-            </template>
-            <el-form-item v-else-if="draft.type === 'rtsp'" label="RTSP 流地址">
-                <el-input v-model.trim="draft.rtspUrl" aria-label="RTSP 流地址" placeholder="rtsp://camera.example:8554/stream" maxlength="2048" />
-            </el-form-item>
-            <template v-else>
-                <el-form-item v-if="!draft.realUsb" label="USB 摄像头编号">
-                    <el-input-number v-model="draft.cameraIndex" aria-label="USB 摄像头编号" :min="0" :max="63" :precision="0" />
-                </el-form-item>
-                <el-checkbox v-model="draft.realUsb">使用本机摄像头（需要授权）</el-checkbox>
-                <template v-if="draft.realUsb">
-                    <el-form-item label="本机摄像头">
-                        <div class="video-camera-options">
-                            <el-select v-model="draft.deviceId" aria-label="本机摄像头">
-                                <el-option label="系统默认摄像头" value="" />
-                                <el-option v-if="savedDeviceMissing" label="已保存的摄像头" :value="draft.deviceId" />
-                                <el-option v-for="entry in devices" :key="entry.deviceId" :label="entry.label" :value="entry.deviceId" />
-                            </el-select>
-                            <el-button :icon="Refresh" title="刷新摄像头列表" aria-label="刷新摄像头列表" @click="RefreshDevices(true)" />
-                        </div>
-                    </el-form-item>
-                    <el-form-item label="分辨率">
-                        <el-select v-model="draft.resolution" aria-label="分辨率">
-                            <el-option v-for="size in RESOLUTIONS" :key="size" :label="size.replace('x', ' × ')" :value="size" />
-                        </el-select>
-                    </el-form-item>
-                    <el-form-item label="帧率（FPS）">
-                        <el-select v-model="draft.fps" aria-label="帧率（FPS）">
-                            <el-option v-for="rate in FRAME_RATES" :key="rate" :label="String(rate)" :value="rate" />
-                        </el-select>
-                    </el-form-item>
-                </template>
-            </template>
-            <p v-if="liveMedia && channel.algorithm.mode === 'model'" class="video-muted">本地画面未运行模型，可切换到画面变化检测。</p>
-            <div><el-button native-type="submit" :disabled="unchanged || channel.state === 'starting'">{{ active ? '应用视频源' : '保存视频源' }}</el-button></div>
-        </el-form>
+        <div v-if="!previewOnly" class="video-actions">
+            <el-button link type="primary" @click="$emit('configure')">配置通道</el-button>
+            <el-button link type="primary" @click="$emit('records')">查看记录</el-button>
+            <el-button link type="primary" @click="$emit('diagnose')">通道诊断</el-button>
+        </div>
     </section>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
-import { FullScreen, Refresh, VideoCamera, VideoPause, VideoPlay } from '@element-plus/icons-vue';
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
+import { FullScreen, VideoCamera } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { CompareFrames, DrawSample, SAMPLE_HEIGHT, SAMPLE_WIDTH } from '@/utils/video-motion';
-import { DrawDetection, DrawModelSample, IsDemoRtspAddress, ModelDetections } from '@/demo/video-recognition';
-import { AddVideoRecord, FrameTimings, SaveVideoWorkspace } from '@/demo/video-workspace';
+import { DrawDetection, DrawModelSample } from '@/demo/video-recognition';
+import { IsBrowserSource, StartVideoChannel, StopVideoChannel, VideoChannelStatus, VideoSourceName } from '@/demo/video-workspace';
 
 const WIDTH = 640;
 const HEIGHT = 360;
-const RECORD_INTERVAL = 12000;
-const RESOLUTIONS = ['640x480', '1280x720', '1920x1080'];
-const FRAME_RATES = [15, 25, 30];
-const props = defineProps({ channel: Object, workspace: Object, selected: Boolean });
-defineEmits(['select']);
+const props = defineProps({ channel: Object, workspace: Object, selected: Boolean, previewOnly: Boolean });
+const emit = defineEmits(['select', 'configure', 'records', 'diagnose', 'local-frame', 'pause-preview']);
 const channel = props.channel;
-const draft = reactive({ ...channel.source });
 const canvas = ref(null);
 const video = ref(null);
 const picture = ref(null);
-const devices = ref([]);
-const savedDeviceMissing = computed(() => draft.deviceId && !devices.value.some(entry => entry.deviceId === draft.deviceId));
-const liveMedia = computed(() => channel.source.type === 'usb' && channel.source.realUsb || channel.source.type === 'mp4' && channel.source.sourceId !== 'sample');
-const active = computed(() => ['starting', 'running'].includes(channel.state));
-const status = computed(() => ({ stopped: '已停止', starting: '启动中', running: '运行中', completed: '播放完成', error: '启动失败' })[channel.state]);
-const statusType = computed(() => ({ running: 'success', starting: 'warning', error: 'danger' })[channel.state] ?? 'info');
-const unchanged = computed(() => JSON.stringify(draft) === JSON.stringify(channel.source));
-const sourceText = computed(() => {
-    if (channel.source.type === 'mp4') {
-        return props.workspace.sources.find(item => item.id === channel.source.sourceId)?.name ?? '视频文件不可用';
+const paused = ref(false);
+const localState = ref('idle');
+const localError = ref('');
+const localFrame = shallowRef(null);
+const localFps = ref(0);
+const browserSource = computed(() => IsBrowserSource(channel.source));
+const stateType = computed(() => browserSource.value ? 'info' : ({ running: 'success', error: 'danger' }[channel.state] ?? 'info'));
+const placeholder = computed(() => {
+    if (browserSource.value) {
+        return { idle: '本地预览未打开', opening: '正在打开本地预览', active: '', completed: '' }[localState.value];
     }
-    if (channel.source.type === 'rtsp') {
-        return 'RTSP（模拟）';
-    }
-    return channel.source.realUsb ? 'USB（本机）' : `USB ${channel.source.cameraIndex}（模拟）`;
+    return paused.value ? '预览已暂停' : props.previewOnly || channel.state === 'running' ? '' : VideoChannelStatus(channel);
 });
-
+const previewAction = computed(() => {
+    if (browserSource.value) {
+        return ['opening', 'active'].includes(localState.value) ? '关闭本地预览' : '打开本地预览';
+    }
+    return paused.value ? '恢复预览' : '暂停预览';
+});
 let stream = null;
 let objectUrl = null;
 let animation = 0;
 let generation = 0;
-let lastRecord = -Infinity;
 let sequence = 0;
-
-async function RefreshDevices(notify = false) {
-    try {
-        const entries = await navigator.mediaDevices.enumerateDevices();
-        devices.value = entries.filter(entry => entry.kind === 'videoinput' && entry.deviceId).map((entry, index) => ({
-            deviceId: entry.deviceId, label: entry.label || `摄像头 ${index + 1}`
-        }));
-        if (notify && !devices.value.length) {
-            ElMessage.info('可先尝试系统默认摄像头');
-        }
-    } catch {
-        if (notify) {
-            ElMessage.warning('无法读取摄像头列表');
-        }
-    }
-}
 
 function Release() {
     generation++;
@@ -159,33 +94,26 @@ function Release() {
         URL.revokeObjectURL(objectUrl);
         objectUrl = null;
     }
-    channel.fps = 0;
+    localFrame.value = null;
+    localFps.value = 0;
 }
 
-function Stop() {
-    channel.state = 'stopped';
-    channel.error = '';
-    channel.frame = null;
+function CloseLocal() {
+    localState.value = 'idle';
     Release();
 }
 
 function Complete() {
-    if (channel.state === 'running') {
-        channel.state = 'completed';
-        Release();
+    if (localState.value === 'active') {
+        CloseLocal();
+        localState.value = 'completed';
     }
 }
 
-function Fail(message) {
-    channel.state = 'error';
-    channel.error = message;
-    channel.frame = null;
-    Release();
-}
-
-function VideoFailed() {
-    if (active.value) {
-        Fail('无法读取视频，请检查本地文件编码或重新选择视频源');
+function MediaFailed() {
+    if (['opening', 'active'].includes(localState.value)) {
+        CloseLocal();
+        localError.value = '无法读取本地视频，请检查文件编码或摄像头';
     }
 }
 
@@ -215,47 +143,21 @@ function PaintMedia(context, media) {
 
 function Render(context, timestamp, runtime) {
     animation = requestAnimationFrame(next => Render(context, next, runtime));
-    if (timestamp - runtime.lastPaint < 64 || (runtime.media && !runtime.media.videoWidth)) {
+    if (timestamp - runtime.lastPaint < 64 || !runtime.media.videoWidth) {
         return;
     }
-    const elapsed = Math.round(runtime.media ? runtime.media.currentTime * 1000 : timestamp - runtime.startedAt);
+    PaintMedia(context, runtime.media);
     const { mode, showBox } = channel.algorithm;
-    if (runtime.mode !== mode) {
-        Object.assign(runtime, { mode, pixels: null, motion: null, detections: [], lastMotion: -Infinity });
-    }
-    if (runtime.media) {
-        PaintMedia(context, runtime.media);
-    } else if (mode === 'motion') {
-        DrawSample(context, WIDTH, HEIGHT, elapsed);
-    } else {
-        DrawModelSample(context, elapsed);
-    }
-    let detections = [];
-    if (mode === 'motion') {
-        detections = ReadMotion(context, timestamp, runtime);
-    } else if (mode === 'model' && !runtime.media) {
-        detections = ModelDetections(elapsed, { ...channel.algorithm, channelId: channel.id });
-    }
+    const detections = mode === 'motion' ? ReadMotion(context, timestamp, runtime) : [];
     if (showBox) {
         detections.forEach(item => DrawDetection(context, item));
     }
-    const timings = mode === 'model' && !runtime.media ? FrameTimings(channel.id, sequence) : null;
-    const frame = { sequence: ++sequence, width: WIDTH, height: HEIGHT, elapsed, mode, detections, timings,
-        inputWidth: runtime.media?.videoWidth ?? WIDTH, inputHeight: runtime.media?.videoHeight ?? HEIGHT,
-        modelId: mode === 'model' ? channel.modelId : null, motion: runtime.motion };
-    channel.frame = frame;
-    if (runtime.frames++ === 0) {
-        runtime.fpsStart = timestamp;
-    }
-    if (timestamp - runtime.fpsStart >= 1000) {
-        channel.fps = Math.round(runtime.frames * 1000 / (timestamp - runtime.fpsStart));
-        runtime.frames = 0;
-    }
+    localFrame.value = {
+        sequence: ++sequence, elapsed: Math.round(runtime.media.currentTime * 1000), detections, motion: runtime.motion,
+        inputWidth: runtime.media.videoWidth, inputHeight: runtime.media.videoHeight
+    };
+    localFps.value = Math.min(16, Math.round(1000 / Math.max(1, timestamp - runtime.lastPaint)));
     runtime.lastPaint = timestamp;
-    if (!runtime.media && mode === 'model' && detections.length && timestamp - lastRecord >= RECORD_INTERVAL) {
-        lastRecord = timestamp;
-        AddVideoRecord(props.workspace, channel, frame);
-    }
 }
 
 async function OpenMedia(source, request) {
@@ -275,7 +177,6 @@ async function OpenMedia(source, request) {
         }
         stream = input;
         video.value.srcObject = input;
-        RefreshDevices();
         return video.value;
     }
     if (source.type === 'mp4' && source.sourceId !== 'sample') {
@@ -291,55 +192,52 @@ async function OpenMedia(source, request) {
     return null;
 }
 
-async function Start() {
-    Stop();
+async function StartLocal() {
+    CloseLocal();
+    localError.value = '';
     const request = generation;
-    channel.state = 'starting';
+    localState.value = 'opening';
     try {
         const media = await OpenMedia(channel.source, request);
         if (request !== generation) {
             return;
         }
-        await media?.play();
+        await media.play();
         if (request !== generation) {
             return;
         }
         const sample = document.createElement('canvas');
         sample.width = SAMPLE_WIDTH;
         sample.height = SAMPLE_HEIGHT;
-        const runtime = { media, startedAt: performance.now(), lastPaint: -Infinity, lastMotion: -Infinity, frames: 0,
-            mode: '', detections: [], sample: sample.getContext('2d', { willReadFrequently: true }) };
+        const runtime = { media, lastPaint: -Infinity, lastMotion: -Infinity, detections: [], sample: sample.getContext('2d', { willReadFrequently: true }) };
         const context = canvas.value.getContext('2d');
-        channel.state = 'running';
+        localState.value = 'active';
         animation = requestAnimationFrame(timestamp => Render(context, timestamp, runtime));
     } catch (error) {
         if (request === generation) {
-            Fail(error.name === 'NotAllowedError' ? '本机摄像头权限未开启' : error.message || '视频源启动失败');
+            CloseLocal();
+            localError.value = error.name === 'NotAllowedError' ? '浏览器本机摄像头权限未开启' : error.message || '本地视频源打开失败';
         }
     }
 }
 
-function SaveSource() {
-    if (draft.type === 'rtsp' && !IsDemoRtspAddress(draft.rtspUrl)) {
-        ElMessage.warning('请输入不包含账号和密码的有效 RTSP 地址');
-        return;
-    }
-    if (draft.type === 'usb' && !Number.isInteger(draft.cameraIndex)) {
-        ElMessage.warning('请输入 0–63 的摄像头编号');
-        return;
-    }
-    if (draft.type === 'mp4' && !props.workspace.sources.some(item => item.id === draft.sourceId)) {
-        ElMessage.warning('请选择可用的 MP4 视频源');
-        return;
-    }
-    channel.source = { ...draft };
-    SaveVideoWorkspace(props.workspace);
-    if (active.value) {
-        Start();
+function TogglePreview() {
+    if (!browserSource.value) {
+        paused.value = !paused.value;
+        emit('pause-preview', paused.value);
+    } else if (['opening', 'active'].includes(localState.value)) {
+        CloseLocal();
     } else {
-        Stop();
+        StartLocal();
     }
-    ElMessage.success('视频源已保存');
+}
+
+function ToggleTask() {
+    if (channel.state === 'running') {
+        StopVideoChannel(channel);
+    } else {
+        StartVideoChannel(props.workspace, channel);
+    }
 }
 
 async function Fullscreen() {
@@ -354,11 +252,25 @@ async function Fullscreen() {
     }
 }
 
-watch(() => channel.session, () => channel.state === 'starting' ? Start() : Stop());
-watch(() => draft.type === 'usb' && draft.realUsb, enabled => {
-    if (enabled) {
-        RefreshDevices();
+watch([() => channel.frame, paused], ([frame, isPaused]) => {
+    if (!frame || isPaused || browserSource.value || !canvas.value) {
+        return;
     }
-}, { immediate: true });
-onBeforeUnmount(Stop);
+    const context = canvas.value.getContext('2d');
+    if (frame.mode === 'motion') {
+        DrawSample(context, WIDTH, HEIGHT, frame.elapsed);
+    } else {
+        DrawModelSample(context, frame.elapsed);
+    }
+    if (channel.algorithm.showBox) {
+        frame.detections.forEach(item => DrawDetection(context, item));
+    }
+}, { flush: 'post' });
+watch(localFrame, frame => emit('local-frame', frame));
+onMounted(() => {
+    if (props.previewOnly && !browserSource.value) {
+        DrawModelSample(canvas.value.getContext('2d'), 0);
+    }
+});
+onBeforeUnmount(CloseLocal);
 </script>

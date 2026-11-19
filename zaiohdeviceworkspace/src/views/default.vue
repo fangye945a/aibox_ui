@@ -20,7 +20,8 @@
 <script>
   import { storage } from '@/demo/storage';
   import { demoFetch } from '@/demo/data';
-  import { onMounted, onBeforeUnmount } from 'vue';
+  import { onMounted, onBeforeUnmount, provide } from 'vue';
+  import { CreateVideoWorkspace, RunVideoWorkspace, VIDEO_WORKSPACE } from '@/demo/video-workspace';
   import { useRouter } from 'vue-router';
   import { startSessionWatch } from '@/utils/session-watch';
   import vlHeader from '@/components/header.vue';
@@ -31,7 +32,11 @@
     setup() {
       const router = useRouter();
       let stopSessionWatch = null;
+      let stopVideoWorkspace = null;
+      const videoWorkspace = CreateVideoWorkspace();
+      provide(VIDEO_WORKSPACE, videoWorkspace);
       onMounted(() => {
+        stopVideoWorkspace = RunVideoWorkspace(videoWorkspace);
         stopSessionWatch = startSessionWatch(() => {
           storage.removeItem('loginToken');
           storage.removeItem('isFirst');
@@ -42,7 +47,10 @@
           isTokenChange: event => storage.isChange(event, 'loginToken')
         });
       });
-      onBeforeUnmount(() => stopSessionWatch?.());
+      onBeforeUnmount(() => {
+        stopSessionWatch?.();
+        stopVideoWorkspace?.();
+      });
     },
     data() {
       return {
