@@ -1,7 +1,7 @@
 <template>
   <section class="monitor-chart-panel" :style="{'--metric-color': color}">
     <div class="panel-heading">
-      <div><h2>{{ title }}</h2><p>模拟采样 · 每5秒更新 · {{ percent ? '使用率' : '传输速率' }}</p></div>
+      <div><h2>{{ title }}</h2><p>模拟采样 · 每5秒更新 · {{ percent ? '使用率' : unit ? '温度' : '传输速率' }}</p></div>
       <span class="mode-badge" :class="{live: live && !error, failed: error}">
         {{ error ? '更新失败' : live ? '实时监控' : historical ? '历史回看' : '已暂停' }}
       </span>
@@ -25,16 +25,16 @@
 
     <div class="summary-grid">
       <div class="stat primary"><span>{{ historical || zoomed ? '区间末值' : '最新采样值' }}</span>
-        <strong>{{ formatMetric(stats.current, percent) }}</strong><small>{{ latestLabel }}</small></div>
-      <div class="stat"><span>区间平均</span><strong>{{ formatMetric(stats.average, percent) }}</strong><small>按有效采样点计算</small></div>
-      <div class="stat"><span>区间峰值</span><strong>{{ formatMetric(stats.peak, percent) }}</strong><small>{{ stats.peakAt ? formatTime(stats.peakAt) : '--' }}</small></div>
+        <strong>{{ DisplayMetric(stats.current) }}</strong><small>{{ latestLabel }}</small></div>
+      <div class="stat"><span>区间平均</span><strong>{{ DisplayMetric(stats.average) }}</strong><small>按有效采样点计算</small></div>
+      <div class="stat"><span>区间峰值</span><strong>{{ DisplayMetric(stats.peak) }}</strong><small>{{ stats.peakAt ? formatTime(stats.peakAt) : '--' }}</small></div>
       <div class="stat"><span>{{ percent ? '最长连续高占用' : '有效采样覆盖' }}</span>
         <strong>{{ visiblePoints.length > 1 ? formatDuration(percent ? stats.longestHighSeconds : stats.coveredSeconds) : '--' }}</strong>
         <small>{{ percent ? `相邻采样均 ≥ ${threshold}%` : `${visiblePoints.length}个有效采样点` }}</small></div>
     </div>
 
     <div class="chart-options">
-      <el-checkbox v-model="compare">对照{{ companion.title }}</el-checkbox>
+      <el-checkbox v-if="!unit" v-model="compare">对照{{ companion.title }}</el-checkbox>
       <label v-if="percent" class="threshold">高占用参考线
         <el-input-number v-model="threshold" :min="1" :max="100" :step="5" :value-on-clear="80"
           size="small" controls-position="right" />
@@ -58,9 +58,9 @@
       <template v-else>
         <p v-if="percent">参考线 {{ threshold }}%：累计高占用 {{ formatDuration(stats.highSeconds) }}，
           最长连续 {{ formatDuration(stats.longestHighSeconds) }}。{{ highAdvice }}</p>
-        <p v-else>峰值 {{ formatMetric(stats.peak, false) }}，发生于 {{ formatTime(stats.peakAt) }}。
-          {{ rateObservation }}</p>
-        <p v-if="compare">同一时间轴对照{{ companion.title }}，区间峰值 {{ formatMetric(companionStats.peak, percent) }}。
+        <p v-else>峰值 {{ DisplayMetric(stats.peak) }}，发生于 {{ formatTime(stats.peakAt) }}。
+          {{ unit ? '' : rateObservation }}</p>
+        <p v-if="compare">同一时间轴对照{{ companion.title }}，区间峰值 {{ DisplayMetric(companionStats.peak) }}。
           同时升高可作为排查线索，无法仅据此确定原因。</p>
         <p v-if="stats.gaps">区间存在 {{ stats.gaps }} 处超过15秒的采样间断，曲线断开，间断不计入连续时长。</p>
         <p v-if="live && stale" class="error-text">最新采样已超过15秒未更新，请检查设备采集状态。</p>
@@ -80,7 +80,7 @@ import { chartPoints, formatDuration, formatMetric, normalizePoints, summarize }
 
 const props = defineProps({
   indicatorType: {type: String, required: true}, title: {type: String, required: true},
-  color: {type: String, required: true}, percent: Boolean,
+  color: {type: String, required: true}, percent: Boolean, unit: String,
   companion: {type: Object, required: true}
 });
 const ranges = [
@@ -134,6 +134,12 @@ let disposed = false;
 function formatTime(value) {
   return new Date(value).toLocaleString('zh-CN', {hour12: false});
 }
+function DisplayMetric(value) {
+  if (props.unit && Number.isFinite(value)) {
+    return `${value.toFixed(1)} ${props.unit}`;
+  }
+  return formatMetric(value, props.percent);
+}
 function axisTime(value) {
   return new Date(value).toLocaleTimeString('zh-CN', {hour12: false});
 }
@@ -155,8 +161,8 @@ function render() {
   const data = [series(props.title, points.value, props.color)];
   if (compare.value) data.push(series(props.companion.title, otherPoints.value, props.companion.color, true));
   const max = Math.max(0, ...points.value.map(p => p[1]), ...(compare.value ? otherPoints.value.map(p => p[1]) : []));
-  const divisor = !props.percent && max >= 1048576 ? 1048576 : !props.percent && max >= 1024 ? 1024 : 1;
-  const unit = props.percent ? '%' : divisor === 1048576 ? 'GiB/s' : divisor === 1024 ? 'MiB/s' : 'KiB/s';
+  const divisor = !props.unit && !props.percent && max >= 1048576 ? 1048576 : !props.unit && !props.percent && max >= 1024 ? 1024 : 1;
+  const unit = props.unit || (props.percent ? '%' : divisor === 1048576 ? 'GiB/s' : divisor === 1024 ? 'MiB/s' : 'KiB/s');
   chart.setOption({
     animation: false,
     color: [props.color, props.companion.color],
@@ -167,7 +173,7 @@ function render() {
       formatter: params => {
         if (!params.length) return '';
         return formatTime(params[0].value[0]) + '\n' + params.map(p =>
-          `${p.seriesName}  ${formatMetric(p.value[1], props.percent)}`).join('\n');
+          `${p.seriesName}  ${DisplayMetric(p.value[1])}`).join('\n');
       }},
     xAxis: {type: 'time', min: windowStart.value, max: windowEnd.value, splitNumber: 5,
       axisLabel: {formatter: axisTime, color: '#64748b', hideOverlap: true}, axisTick: {show: false},

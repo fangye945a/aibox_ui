@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+import { ReadSystemMetric } from './system-monitor';
 import { strToU8, zipSync } from 'fflate';
 import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils';
@@ -62,24 +63,12 @@ function systemInfo() {
 function monitoringData({ start_time: start, end_time: end, type }) {
   const endTime = Math.min(Date.parse(end), Date.now());
   const startTime = Math.max(Date.parse(start), endTime - 24 * 3600000);
-  const profiles = {
-    cpu_usage: [37, 8, 45, 0],
-    memory_used: [43, 3, 11, 0.8],
-    uplink_network: [820, 210, 590, 1.3],
-    downstream_network: [1450, 340, 1320, 1.7],
-    disk_read_rate: [210, 67, 380, 2.2],
-    disk_write_rate: [95, 28, 260, 2.9]
-  };
   const points = [];
-  if (!Object.hasOwn(profiles, type)) {
-    return { [type]: points };
-  }
-  const [base, variation, peak, phase] = profiles[type];
   for (let time = Math.ceil(startTime / 5000) * 5000; time <= endTime; time += 5000) {
-    const wave = Math.sin(time / 52000 + phase) + 0.4 * Math.sin(time / 12000 + phase);
-    const burst = Math.max(0, Math.cos(time / 25000 + phase)) ** 8;
-    const value = base + variation * wave + peak * burst;
-    points.push({ time: new Date(time).toISOString(), value: Number(value.toFixed(2)) });
+    const value = ReadSystemMetric(type, time);
+    if (value !== null) {
+      points.push({ time: new Date(time).toISOString(), value });
+    }
   }
   return { [type]: points };
 }

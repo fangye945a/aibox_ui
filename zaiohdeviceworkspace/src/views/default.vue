@@ -22,6 +22,7 @@
   import { demoFetch } from '@/demo/data';
   import { onMounted, onBeforeUnmount, provide } from 'vue';
   import { CreateVideoWorkspace, RunVideoWorkspace, VIDEO_WORKSPACE } from '@/demo/video-workspace';
+  import { CreateSystemMonitor, RunSystemMonitor, SYSTEM_MONITOR } from '@/demo/system-monitor';
   import { useRouter } from 'vue-router';
   import { startSessionWatch } from '@/utils/session-watch';
   import vlHeader from '@/components/header.vue';
@@ -33,10 +34,14 @@
       const router = useRouter();
       let stopSessionWatch = null;
       let stopVideoWorkspace = null;
+      let stopSystemMonitor = null;
       const videoWorkspace = CreateVideoWorkspace();
+      const systemMonitor = CreateSystemMonitor();
       provide(VIDEO_WORKSPACE, videoWorkspace);
+      provide(SYSTEM_MONITOR, systemMonitor);
       onMounted(() => {
         stopVideoWorkspace = RunVideoWorkspace(videoWorkspace);
+        stopSystemMonitor = RunSystemMonitor(systemMonitor);
         stopSessionWatch = startSessionWatch(() => {
           storage.removeItem('loginToken');
           storage.removeItem('isFirst');
@@ -50,6 +55,7 @@
       onBeforeUnmount(() => {
         stopSessionWatch?.();
         stopVideoWorkspace?.();
+        stopSystemMonitor?.();
       });
     },
     data() {
