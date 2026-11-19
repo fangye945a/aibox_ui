@@ -86,14 +86,11 @@
     .recognition .video-columns, .recognition .video-metrics { grid-template-columns: minmax(0, 1fr); }
 }
 
-.recognition .video-layout-toolbar { margin-bottom: 12px; }
-.recognition .video-layout-toolbar .el-select { width: min(100%, 240px); }
-.recognition .video-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; }
-.recognition .video-grid-1 { grid-template-columns: minmax(0, 1fr); }
-.recognition .video-grid .video-panel { padding: 8px; }
-.recognition .video-grid .video-panel h2 { overflow-wrap: anywhere; }
-.recognition .video-grid .video-panel h2 .el-button { white-space: normal; text-align: left; height: auto; line-height: 1.3; min-height: 28px; }
-.recognition .video-grid .video-preview-info { margin: 7px 0; font-size: 12px; }
+.recognition .video-channel-picker { justify-content: flex-start; gap: 12px; margin-bottom: 12px; }
+.recognition .video-channel-picker .el-select { width: min(100%, 240px); }
+.recognition .video-algorithm-fields { border: 1px solid #e6ebf0; border-radius: 6px; padding: 10px; margin-bottom: 10px; }
+.recognition .video-model-result { margin: 10px 0; }
+.recognition .video-algorithm-fields legend { padding: 0 4px; font-weight: 600; }
 .recognition.video-dialog { padding: 0; }
 .recognition .video-model-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; margin-top: 12px; }
 .recognition .video-model-summary {

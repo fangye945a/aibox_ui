@@ -16,6 +16,7 @@
 import { strFromU8, strToU8, unzip, zipSync } from 'fflate';
 import { bytesToHex } from '@noble/hashes/utils';
 import { sha256 } from '@noble/hashes/sha256';
+import { ModelLabels } from './video-recognition';
 
 const PACKAGE_LIMIT = 64 * 1024 * 1024;
 const DESCRIPTION_LIMIT = 64 * 1024;
@@ -106,7 +107,7 @@ export async function ParseModelPackage(blob, origin) {
     const file = item?.file;
     const binary = typeof file === 'string' && file !== DESCRIPTION_FILE && Object.hasOwn(entries, file) ? entries[file] : null;
     if (Object.keys(entries).length !== 2 || !binary?.length || typeof item.name !== 'string' || !item.name.trim() || item.name.length > 80 ||
-        typeof item.version !== 'string' || !/^[a-z0-9.-]{1,32}$/i.test(item.version) || !['person', 'yolo26n'].includes(item.kind)) {
+        typeof item.version !== 'string' || !/^[a-z0-9.-]{1,32}$/i.test(item.version) || !['person', 'yolo26n', 'face'].includes(item.kind)) {
         throw new Error('model.json 须包含有效的 name、version、kind、target 和 file');
     }
     if (item.target !== 'rk3588') {
@@ -118,7 +119,7 @@ export async function ParseModelPackage(blob, origin) {
     }
     return {
         id: `${item.kind}-${hash.slice(0, 24)}`, name: item.name.trim(), version: item.version, kind: item.kind, target: item.target, file,
-        description: typeof item.description === 'string' ? item.description.slice(0, 1000) : '', labels: item.kind === 'person' ? ['person'] : ['person', 'hat'],
+        description: typeof item.description === 'string' ? item.description.slice(0, 1000) : '', labels: ModelLabels(item.kind),
         sha256: hash, origin, size: blob.size, status: '可用', demo: item.demo === true
     };
 }

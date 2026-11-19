@@ -77,27 +77,31 @@
                 </section>
                 <section class="video-panel">
                     <h3>算法与模型</h3>
-                    <el-form-item v-if="algorithm.mode === 'model'" label="算法模型">
-                        <el-select v-model="modelId" aria-label="算法模型">
-                            <el-option v-for="model in compatible" :key="model.id" :label="model.name" :value="model.id" />
-                        </el-select>
-                    </el-form-item>
-                    <el-form-item label="算法">
-                        <el-select v-model="algorithm.mode" aria-label="算法">
-                            <el-option label="模型检测（模拟）" value="model" />
+                    <el-form-item label="分析模式">
+                        <el-select v-model="algorithm.mode" aria-label="分析模式">
+                            <el-option label="算法模型（模拟）" value="model" />
                             <el-option label="画面变化检测" value="motion" />
                             <el-option label="仅预览" value="none" />
                         </el-select>
                     </el-form-item>
                     <template v-if="algorithm.mode === 'model'">
-                        <el-form-item label="置信度阈值">
-                            <el-slider v-model="algorithm.confidence" aria-label="置信度阈值" :min="0.01" :max="1" :step="0.01"
-                                show-input :show-input-controls="false" />
+                        <el-form-item label="启用算法（可多选）">
+                            <el-checkbox-group v-model="modelIds" aria-label="启用算法">
+                                <el-checkbox v-for="model in compatible" :key="model.id" :value="model.id">{{ model.name }}</el-checkbox>
+                            </el-checkbox-group>
                         </el-form-item>
-                        <el-form-item v-if="selectedModel?.kind === 'person'" label="NMS IoU 阈值">
-                            <el-slider v-model="algorithm.nmsIou" aria-label="NMS IoU 阈值" :min="0.01" :max="1" :step="0.01" show-input :show-input-controls="false" />
-                        </el-form-item>
-                        <p v-else class="video-muted">NMS IoU：安全帽模型不适用</p>
+                        <fieldset v-for="model in selectedModels" :key="model.id" class="video-algorithm-fields">
+                            <legend>{{ model.name }}</legend>
+                            <el-form-item :label="model.kind === 'face' ? '相似度阈值' : '置信度阈值'">
+                                <el-slider v-model="parameters[model.id].confidence" :aria-label="`${model.name}阈值`"
+                                    :min="0.01" :max="1" :step="0.01" show-input :show-input-controls="false" />
+                            </el-form-item>
+                            <el-form-item v-if="model.kind === 'person'" label="NMS IoU 阈值">
+                                <el-slider v-model="parameters[model.id].nmsIou" :aria-label="`${model.name} NMS IoU 阈值`"
+                                    :min="0.01" :max="1" :step="0.01" show-input :show-input-controls="false" />
+                            </el-form-item>
+                        </fieldset>
+                        <p v-if="selectedModels.some(model => model.kind === 'face')" class="video-muted">人脸比对使用模拟相似度。</p>
                     </template>
                     <template v-if="algorithm.mode === 'motion'">
                         <el-form-item label="灵敏度"><el-slider v-model="algorithm.sensitivity" aria-label="灵敏度" :min="1" :max="100" /></el-form-item>
@@ -112,7 +116,7 @@
                     <h3 class="video-divider">运行设置</h3>
                     <el-form-item label="通道名称"><el-input v-model.trim="name" aria-label="通道名称" maxlength="80" required /></el-form-item>
                     <el-checkbox v-model="autostart" :disabled="IsBrowserSource(draft)">模拟 AIBox 启动时自动检测</el-checkbox>
-                    <p v-if="IsBrowserSource(draft)" class="video-muted">此视频源由浏览器播放，可使用画面变化检测。</p>
+                    <p v-if="IsBrowserSource(draft)" class="video-muted">本地画面由浏览器播放，算法模型显示模拟分数。</p>
                 </section>
             </div>
             <div class="video-actions video-divider">
@@ -131,7 +135,9 @@ import { computed, reactive, ref, shallowRef, watch } from 'vue';
 import { Refresh } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { DateText } from '@/demo/video-recognition';
-import { AddVideoSource, IsBrowserSource, SaveVideoWorkspace, StartVideoChannel, StopVideoChannel, VideoSourceError } from '@/demo/video-workspace';
+import {
+    AddVideoSource, IsBrowserSource, MakeModelSettings, SaveVideoWorkspace, StartVideoChannel, StopVideoChannel, VideoSourceError
+} from '@/demo/video-workspace';
 import VideoChannel from './VideoChannel.vue';
 
 const RESOLUTIONS = ['640x480', '1280x720', '1920x1080'];
@@ -143,7 +149,8 @@ const draft = reactive({ ...channel.source });
 const algorithm = reactive({ ...channel.algorithm });
 const name = ref(channel.name);
 const autostart = ref(channel.autostart);
-const modelId = ref(channel.modelId);
+const modelIds = ref(channel.modelSettings.map(item => item.modelId));
+const parameters = reactive(Object.fromEntries(channel.modelSettings.map(item => [item.modelId, { ...item }])));
 const devices = ref([]);
 const fileInput = ref(null);
 const preview = shallowRef(null);
@@ -155,9 +162,15 @@ const uploaded = computed(() => props.workspace.sources.filter(item => item.file
 const running = computed(() => channel.state === 'running');
 const compatible = computed(() => props.workspace.models.filter(model =>
     model.target === 'rk3588' && model.status !== '已暂存'));
-const selectedModel = computed(() => compatible.value.find(model => model.id === modelId.value));
+const selectedModels = computed(() => modelIds.value.map(id => compatible.value.find(model => model.id === id)).filter(Boolean));
+const selectedSettings = computed(() => modelIds.value.map(id => parameters[id]));
+watch(selectedModels, models => {
+    for (const model of models) {
+        parameters[model.id] ??= MakeModelSettings(model.id, undefined, model.kind);
+    }
+}, { immediate: true, flush: 'sync' });
 const taskChanged = computed(() => JSON.stringify(draft) !== JSON.stringify(channel.source) ||
-    JSON.stringify(algorithm) !== JSON.stringify(channel.algorithm) || modelId.value !== channel.modelId);
+    JSON.stringify(algorithm) !== JSON.stringify(channel.algorithm) || JSON.stringify(selectedSettings.value) !== JSON.stringify(channel.modelSettings));
 const changed = computed(() => taskChanged.value || name.value !== channel.name || autostart.value !== channel.autostart);
 
 async function RefreshDevices(notify = false) {
@@ -190,9 +203,15 @@ function AddFile(event) {
 
 function VerifySource() {
     const error = VideoSourceError(props.workspace, draft);
-    preview.value = error ? null : { ...channel, source: { ...draft }, algorithm: { ...algorithm }, frame: null, error: '' };
+    preview.value = error ? null : {
+        ...channel, source: { ...draft }, algorithm: { ...algorithm }, modelSettings: selectedSettings.value.map(item => ({ ...item })), frame: null, error: ''
+    };
     previewKey.value++;
     verification.value = error || (IsBrowserSource(draft) ? '可打开本地预览检查画面' : '模拟视频源已生成验证画面');
+}
+
+function IsThreshold(value) {
+    return Number.isFinite(value) && value >= 0.01 && value <= 1;
 }
 
 async function Save() {
@@ -206,7 +225,15 @@ async function Save() {
         ElMessage.warning('通道名称已存在');
         return;
     }
-    if (error || !name.value || !compatible.value.some(model => model.id === modelId.value) || !validParameters) {
+    const validModels = selectedModels.value.length > 0 && selectedModels.value.length === modelIds.value.length && selectedModels.value.every(model => {
+        const config = parameters[model.id];
+        return IsThreshold(config.confidence) && (model.kind !== 'person' || IsThreshold(config.nmsIou));
+    });
+    if (algorithm.mode === 'model' && !validModels) {
+        ElMessage.warning('请至少选择一个算法并检查各项阈值');
+        return;
+    }
+    if (error || !name.value || !validParameters) {
         ElMessage.warning(error || '请检查通道名称、模型和检测参数');
         return;
     }
@@ -219,7 +246,10 @@ async function Save() {
                 `保存时将短暂重启 ${channel.name}，其他通道继续运行。`;
             await ElMessageBox.confirm(message, '应用运行配置', { confirmButtonText: '保存并应用', cancelButtonText: '返回编辑' });
         }
-        const updated = { name: name.value, source: { ...draft }, algorithm: { ...algorithm }, modelId: modelId.value, autostart: autostart.value };
+        const updated = {
+            name: name.value, source: { ...draft }, algorithm: { ...algorithm },
+            modelSettings: selectedSettings.value.map(item => ({ ...item })), autostart: autostart.value
+        };
         const previous = { ...channel };
         Object.assign(channel, updated);
         if (props.creating) {

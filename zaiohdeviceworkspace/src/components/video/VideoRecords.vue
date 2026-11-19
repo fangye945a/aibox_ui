@@ -46,7 +46,7 @@
                     <template #default="{ row }">#{{ row.id }} · {{ DateText(row.createdAt) }}</template>
                 </el-table-column>
                 <el-table-column label="通道" min-width="140">
-                    <template #default="{ row }">{{ row.channelName ?? ChannelName(row.channelId) }}<br><small>{{ row.modelId }}</small></template>
+                    <template #default="{ row }">{{ row.channelName ?? ChannelName(row.channelId) }}<br><small>{{ row.modelNames?.join('、') ?? row.modelId }}</small></template>
                 </el-table-column>
                 <el-table-column label="检测结果" min-width="200">
                     <template #default="{ row }">{{ ResultText(row) }}</template>
@@ -123,7 +123,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import { DateText, DetectionLabel, DownloadBlob, DrawDetection, DrawModelSample } from '@/demo/video-recognition';
+import { DateText, DetectionLabel, DetectionText, DownloadBlob, DrawDetection, DrawModelSample } from '@/demo/video-recognition';
 import { FilterVideoRecords } from '@/demo/video-workspace';
 
 const PAGE_SIZE = 40;
@@ -180,7 +180,7 @@ function ApplyFilters() {
 }
 
 function ResultText(record) {
-    return record.detections.map(item => `${DetectionLabel(item.kind)} ${Math.round(item.score * 100)}%`).join('、') || '无目标';
+    return record.detections.map(DetectionText).join('、') || '无目标';
 }
 
 function CsvCell(value) {
@@ -190,7 +190,7 @@ function CsvCell(value) {
 }
 
 function Export() {
-    const rows = records.value.map(row => [row.id, DateText(row.createdAt), row.channelName ?? ChannelName(row.channelId), row.modelId,
+    const rows = records.value.map(row => [row.id, DateText(row.createdAt), row.channelName ?? ChannelName(row.channelId), row.modelNames?.join('、') ?? row.modelId,
         row.sequence, row.width, row.height, row.elapsed, ResultText(row), row.timings.pipeline.toFixed(1)]);
     rows.unshift(['记录', '时间', '通道', '模型', '帧号', '宽度', '高度', '源时间戳(ms)', '检测结果', '管线耗时(ms)']);
     DownloadBlob(new Blob(['\ufeff', rows.map(row => row.map(CsvCell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }), 'traceiq-records.csv');

@@ -69,16 +69,18 @@ function DrawPerson(context, person) {
 
 /** @brief 在对应原帧上绘制已保存的目标位置和置信度。 */
 export function DrawDetection(context, item) {
-    const color = { hat: '#f2ca66', motion: '#80c7ff', person: '#69e0a9' }[item.kind];
-    const text = item.kind === 'motion' ? '画面变化' : `${DetectionLabel(item.kind)} ${Math.round(item.score * 100)}%`;
-    const labelX = Math.max(0, Math.min(item.x, context.canvas.width - 96));
-    const labelY = Math.max(0, item.y - 17);
+    const color = { face: '#c4acff', hat: '#f2ca66', motion: '#80c7ff', person: '#69e0a9' }[item.kind];
+    const text = DetectionText(item);
+    context.font = '12px sans-serif';
+    const labelWidth = context.measureText(text).width + 10;
+    const labelX = Math.max(0, Math.min(item.x, context.canvas.width - labelWidth));
+    const labelOffset = item.kind === 'hat' ? -35 : -17;
+    const labelY = Math.max(0, item.kind === 'face' ? item.y + item.height : item.y + labelOffset);
     context.strokeStyle = color;
     context.lineWidth = 2;
     context.strokeRect(item.x, item.y, item.width, item.height);
     context.fillStyle = color;
-    context.font = '12px sans-serif';
-    context.fillRect(labelX, labelY, context.measureText(text).width + 10, 16);
+    context.fillRect(labelX, labelY, labelWidth, 16);
     context.fillStyle = '#17232c';
     context.fillText(text, labelX + 5, labelY + 12);
 }
@@ -92,6 +94,12 @@ function SamplePeople(elapsed) {
 /** @brief 根据通道阈值生成当前模拟帧的目标列表。 */
 export function ModelDetections(elapsed, settings) {
     const [first, second] = SamplePeople(elapsed);
+    if (settings.channelId === 'face') {
+        const candidates = [first, second].map((person, index) => ({
+            x: person.x + 15, y: person.y + 7, width: 23, height: 24, kind: 'face', score: index === 0 ? 0.96 : 0.62
+        }));
+        return SelectDetections(candidates, settings);
+    }
     const candidates = [first, second];
     if (settings.channelId === 'person') {
         candidates.push({ ...first, x: first.x + 8, y: first.y + 7, score: 0.66 });
@@ -115,7 +123,22 @@ export function DrawModelSample(context, elapsed) {
 
 /** @brief 将检测类别转换为列表、截图和 CSV 共用的中文名称。 */
 export function DetectionLabel(kind) {
-    return { person: '人员', hat: '安全帽', motion: '画面变化' }[kind] ?? kind;
+    return { face: '人脸比对', person: '人员', hat: '安全帽', motion: '画面变化' }[kind] ?? kind;
+}
+
+/** @brief 显示检测分数或演示人脸比对的相似度。 */
+export function DetectionText(item) {
+    const label = DetectionLabel(item.kind);
+    if (item.score == null) {
+        return label;
+    }
+    const score = Math.round(item.score * 100);
+    return item.kind === 'face' ? `${label} · 相似度 ${score}%` : `${label} ${score}%`;
+}
+
+/** @brief 返回算法模型的演示类别。 */
+export function ModelLabels(kind) {
+    return { person: ['person'], yolo26n: ['person', 'hat'], face: ['face'] }[kind];
 }
 
 /** @brief 以浏览器本地时间显示采样时间。 */

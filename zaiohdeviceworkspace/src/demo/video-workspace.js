@@ -15,7 +15,7 @@
 
 import { markRaw, reactive } from 'vue';
 import { storage } from './storage';
-import { DetectionLabel, IsDemoRtspAddress, ModelDetections } from './video-recognition';
+import { DetectionLabel, IsDemoRtspAddress, ModelDetections, ModelLabels } from './video-recognition';
 import { CompareFrames, DrawSample, SAMPLE_HEIGHT, SAMPLE_WIDTH } from '@/utils/video-motion';
 
 export const VIDEO_WORKSPACE = Symbol('video-workspace');
@@ -39,8 +39,10 @@ export function MakeChannel(id, name, modelId, saved) {
     const suffix = id === 'person' ? '' : ':safety';
     const camera = !saved && legacy ? ReadConfig(`video-camera${suffix}`) : {};
     const algorithm = !saved && legacy ? ReadConfig(`video-algorithm${suffix}`) : {};
+    const previous = saved?.algorithm ?? algorithm;
+    const modelSettings = saved?.modelSettings ?? [MakeModelSettings(saved?.modelId ?? modelId, previous)];
     return {
-        id, name, modelId, autostart: true, ...saved,
+        id, name, autostart: true, ...saved, modelSettings,
         source: {
             type: camera.source === 'local' ? 'usb' : camera.source === 'rtsp' ? 'rtsp' : 'mp4',
             sourceId: 'sample', loop: camera.loop ?? true, rtspUrl: camera.rtspUrl ?? '',
@@ -53,9 +55,40 @@ export function MakeChannel(id, name, modelId, saved) {
     };
 }
 
-/** @brief 返回该模拟模型支持的类别。 */
-export function ModelLabels(kind) {
-    return kind === 'person' ? ['person'] : ['person', 'hat'];
+/** @brief 为每个模型创建独立参数，并接受旧版单模型参数。 */
+export function MakeModelSettings(modelId, previous, kind) {
+    return { modelId, confidence: previous?.confidence ?? (kind === 'face' ? 0.8 : 0.25), nmsIou: previous?.nmsIou ?? 0.45 };
+}
+
+/** @brief 返回当前通道启用的模型及其配置。 */
+export function ChannelModels(workspace, channel) {
+    if (channel.algorithm.mode !== 'model') {
+        return [];
+    }
+    return channel.modelSettings.flatMap(settings => {
+        const model = workspace.models.find(item => item.id === settings.modelId);
+        return model ? [{ id: model.id, name: model.name, kind: model.kind, settings }] : [];
+    });
+}
+
+/** @brief 在同一模拟帧上执行所有已启用的算法。 */
+export function AnalyzeModels(models, elapsed, sequence) {
+    const modelResults = [];
+    let timings = null;
+    for (const model of models) {
+        const profile = model.kind === 'yolo26n' ? 'safety' : model.kind;
+        const detections = ModelDetections(elapsed, { ...model.settings, channelId: profile });
+        modelResults.push({ id: model.id, name: model.name, detections });
+        const sample = FrameTimings(profile, sequence);
+        if (!timings) {
+            timings = sample;
+        } else {
+            timings.inference += sample.inference;
+            timings.postprocess += sample.postprocess;
+            timings.pipeline += sample.inference + sample.postprocess;
+        }
+    }
+    return { detections: modelResults.flatMap(result => result.detections), timings, modelResults };
 }
 
 /** @brief 返回模拟单帧各阶段的处理耗时。 */
@@ -92,7 +125,8 @@ export function CreateVideoWorkspace() {
     const channels = Array.isArray(saved.channels) ? saved.channels.slice(0, MAX_VIDEO_CHANNELS).map(item =>
         MakeChannel(item.id, item.name, item.modelId, item)) : legacy;
     return reactive({
-        channels, models: [MakeBaseline('person-baseline', 'Person', 'person'), MakeBaseline('yolo26n-baseline', 'YOLO26n', 'yolo26n'), ...(saved.models ?? [])],
+        channels, models: [MakeBaseline('person-baseline', '人形检测', 'person'),
+            MakeBaseline('yolo26n-baseline', '安全帽识别', 'yolo26n'), MakeBaseline('face-baseline', '人脸比对', 'face'), ...(saved.models ?? [])],
         sources: [{ id: 'sample', name: '内置示例画面', size: null, createdAt: null }],
         records: SeedRecords(now), nextRecord: SAMPLE_COUNT + 1,
         sampledAt: now,
@@ -195,15 +229,9 @@ function RunFrame(workspace, channel, runtime, now) {
     }
     const elapsed = Math.round(now - channel.startedAt);
     const { mode } = channel.algorithm;
-    const kind = workspace.models.find(model => model.id === channel.modelId)?.kind ?? 'person';
-    const profile = kind === 'person' ? 'person' : 'safety';
-    const result = mode === 'motion' ? SampleMotion(runtime, elapsed, channel.algorithm) : { detections: [], motion: null };
-    if (mode === 'model') {
-        result.detections = ModelDetections(elapsed, { ...channel.algorithm, channelId: profile });
-    }
     const sequence = ++runtime.sequence;
-    const frame = { sequence, elapsed, mode, ...result, width: 640, height: 360, inputWidth: 640, inputHeight: 360,
-        modelId: mode === 'model' ? channel.modelId : null, timings: mode === 'model' ? FrameTimings(profile, sequence) : null };
+    const result = mode === 'motion' ? SampleMotion(runtime, elapsed, channel.algorithm) : AnalyzeModels(ChannelModels(workspace, channel), elapsed, sequence);
+    const frame = { sequence, elapsed, mode, ...result, width: 640, height: 360, inputWidth: 640, inputHeight: 360 };
     channel.fps = Math.min(13, Math.round(1000 / Math.max(1, now - runtime.lastFrame)));
     runtime.lastFrame = now;
     channel.frame = frame;
@@ -239,7 +267,9 @@ export function RunVideoWorkspace(workspace) {
 
 /** @brief 保存通道和模型元数据，避免把本地视频或模型文件写入持久配置。 */
 export function SaveVideoWorkspace(workspace) {
-    const channels = workspace.channels.map(({ id, name, source, algorithm, modelId, autostart }) => ({ id, name, source, algorithm, modelId, autostart }));
+    const channels = workspace.channels.map(({ id, name, source, algorithm, modelSettings, autostart }) => ({
+        id, name, source, algorithm, modelSettings, autostart
+    }));
     const models = workspace.models.filter(model => model.status !== '内置基线');
     storage.setItem(CONFIG_KEY, JSON.stringify({ channels, models }));
 }
@@ -251,7 +281,9 @@ export function AddVideoSource(workspace, file) {
 
 /** @brief 添加模拟历史记录，同时限制记录数。 */
 export function AddVideoRecord(workspace, channel, frame) {
-    const record = { ...frame, id: workspace.nextRecord++, channelId: channel.id, channelName: channel.name, createdAt: Date.now() };
+    const { modelResults, ...snapshot } = frame;
+    const modelNames = modelResults?.map(result => result.name);
+    const record = { ...snapshot, modelNames, id: workspace.nextRecord++, channelId: channel.id, channelName: channel.name, createdAt: Date.now() };
     workspace.records.unshift(record);
     if (workspace.records.length > RECORD_LIMIT) {
         workspace.records.pop();
@@ -282,7 +314,8 @@ export function FilterVideoRecords(workspace, filters) {
     const end = filters.end ? new Date(filters.end).getTime() : Infinity;
     return workspace.records.filter(record => {
         const channelName = record.channelName ?? workspace.channels.find(channel => channel.id === record.channelId)?.name;
-        const search = [record.id, record.modelId, channelName, ...record.detections.map(item => DetectionLabel(item.kind))].join(' ').toLowerCase();
+        const labels = record.detections.map(item => DetectionLabel(item.kind));
+        const search = [record.id, record.modelId, ...(record.modelNames ?? []), channelName, ...labels].join(' ').toLowerCase();
         return (!filters.channel || filters.channel === record.channelId) && record.createdAt >= start && record.createdAt <= end && search.includes(query);
     });
 }

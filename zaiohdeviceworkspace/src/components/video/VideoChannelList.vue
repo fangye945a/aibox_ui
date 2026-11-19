@@ -47,7 +47,7 @@ import { ref, shallowRef, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus } from '@element-plus/icons-vue';
 import {
-    IsBrowserSource, MakeChannel, MAX_VIDEO_CHANNELS, SaveVideoWorkspace, StartVideoChannel, VideoChannelStatus, VideoSourceName
+    ChannelModels, IsBrowserSource, MakeChannel, MAX_VIDEO_CHANNELS, SaveVideoWorkspace, StartVideoChannel, VideoChannelStatus, VideoSourceName
 } from '@/demo/video-workspace';
 import VideoChannelSettings from './VideoChannelSettings.vue';
 
@@ -117,7 +117,7 @@ function ModelName(channel) {
     if (channel.algorithm.mode !== 'model') {
         return channel.algorithm.mode === 'motion' ? '画面变化检测' : '仅预览';
     }
-    return props.workspace.models.find(item => item.id === channel.modelId)?.name ?? '不可用';
+    return ChannelModels(props.workspace, channel).map(model => model.name).join('、') || '不可用';
 }
 
 watch(() => props.initialChannel, id => {

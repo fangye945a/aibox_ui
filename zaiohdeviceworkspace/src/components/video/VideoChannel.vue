@@ -44,7 +44,7 @@ import { FullScreen, VideoCamera } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { CompareFrames, DrawSample, SAMPLE_HEIGHT, SAMPLE_WIDTH } from '@/utils/video-motion';
 import { DrawDetection, DrawModelSample } from '@/demo/video-recognition';
-import { IsBrowserSource, StartVideoChannel, StopVideoChannel, VideoChannelStatus, VideoSourceName } from '@/demo/video-workspace';
+import { AnalyzeModels, ChannelModels, IsBrowserSource, StartVideoChannel, StopVideoChannel, VideoChannelStatus, VideoSourceName } from '@/demo/video-workspace';
 
 const WIDTH = 640;
 const HEIGHT = 360;
@@ -59,6 +59,7 @@ const localState = ref('idle');
 const localError = ref('');
 const localFrame = shallowRef(null);
 const localFps = ref(0);
+const models = computed(() => ChannelModels(props.workspace, channel));
 const browserSource = computed(() => IsBrowserSource(channel.source));
 const stateType = computed(() => browserSource.value ? 'info' : ({ running: 'success', error: 'danger' }[channel.state] ?? 'info'));
 const placeholder = computed(() => {
@@ -148,12 +149,15 @@ function Render(context, timestamp, runtime) {
     }
     PaintMedia(context, runtime.media);
     const { mode, showBox } = channel.algorithm;
-    const detections = mode === 'motion' ? ReadMotion(context, timestamp, runtime) : [];
+    const elapsed = Math.round(runtime.media.currentTime * 1000);
+    sequence++;
+    const motionDetections = mode === 'motion' ? ReadMotion(context, timestamp, runtime) : [];
     if (showBox) {
-        detections.forEach(item => DrawDetection(context, item));
+        motionDetections.forEach(item => DrawDetection(context, item));
     }
+    const analysis = mode === 'model' ? AnalyzeModels(models.value, elapsed, sequence) : { detections: motionDetections };
     localFrame.value = {
-        sequence: ++sequence, elapsed: Math.round(runtime.media.currentTime * 1000), detections, motion: runtime.motion,
+        sequence, elapsed, ...analysis, motion: runtime.motion,
         inputWidth: runtime.media.videoWidth, inputHeight: runtime.media.videoHeight
     };
     localFps.value = Math.min(16, Math.round(1000 / Math.max(1, timestamp - runtime.lastPaint)));

@@ -17,59 +17,54 @@
                 <h1>实时检测</h1>
                 <el-tag type="info" effect="plain">Mock 演示</el-tag>
             </header>
-                    <dl class="video-summary">
-                        <div><dt>总处理速率（模拟）</dt><dd>{{ totalFps }} FPS</dd></div>
-                        <div><dt>选中画面检测数</dt><dd>{{ frame?.detections.length ?? '—' }}</dd></div>
-                        <div><dt>选中画面推理耗时</dt><dd>{{ Timed('inference') }}</dd></div>
-                    </dl>
-                    <div class="video-heading video-layout-toolbar">
-                        <el-radio-group v-model="layout" aria-label="画面布局">
-                            <el-radio-button :value="1">单通道</el-radio-button>
-                            <el-radio-button :value="2">双通道</el-radio-button>
-                            <el-radio-button :value="4">四通道</el-radio-button>
-                        </el-radio-group>
-                        <el-select v-if="layout < workspace.channels.length" v-model="pageIndex" aria-label="画面分组">
-                            <el-option v-for="index in pageCount" :key="index" :label="GroupLabel(index - 1)" :value="index - 1" />
-                        </el-select>
+            <dl class="video-summary">
+                <div><dt>总处理速率（模拟）</dt><dd>{{ totalFps }} FPS</dd></div>
+                <div><dt>选中画面检测数</dt><dd>{{ frame?.detections.length ?? '—' }}</dd></div>
+                <div><dt>选中画面推理耗时</dt><dd>{{ Timed('inference') }}</dd></div>
+            </dl>
+            <div v-if="workspace.channels.length" class="video-heading video-channel-picker">
+                <label for="live-channel">视频通道</label>
+                <el-select id="live-channel" :model-value="selected?.id" aria-label="视频通道" @change="Open('live', $event)">
+                    <el-option v-for="channel in workspace.channels" :key="channel.id" :label="channel.name" :value="channel.id" />
+                </el-select>
+            </div>
+            <div class="video-live">
+                <VideoChannel v-if="selected" :key="selected.id" :channel="selected" :workspace="workspace" selected
+                    @local-frame="localFrame = $event" @pause-preview="paused = $event"
+                    @configure="Open('settings', selected.id)" @records="Open('records', selected.id)" @diagnose="Open('diagnostics', selected.id)" />
+                <section v-else class="video-panel" aria-label="未配置通道">
+                    <div class="video-picture"><div class="video-placeholder">暂无通道</div></div>
+                    <el-button link type="primary" @click="Open('settings')">配置通道</el-button>
+                </section>
+                <aside class="video-panel" aria-label="选中画面分析">
+                    <div class="video-heading"><h2>{{ selected?.name || '画面详情' }}</h2><el-tag size="small">帧 #{{ frame?.sequence ?? '—' }}</el-tag></div>
+                    <h3>当前帧目标分布</h3>
+                    <div v-for="row in distribution" :key="row.kind" class="video-bar">
+                        <span>{{ DetectionLabel(row.kind) }}</span>
+                        <el-progress :percentage="row.count * 100 / frame.detections.length" :show-text="false" />
+                        <strong>{{ row.count }}</strong>
                     </div>
-                    <div class="video-live">
-                        <div class="video-grid" :class="`video-grid-${layout}`">
-                            <VideoChannel v-for="channel in visibleChannels" :key="channel.id" :channel="channel" :workspace="workspace"
-                                :selected="channel.id === selectedId" @select="selectedId = channel.id" @local-frame="UpdateLocal(channel.id, $event)"
-                                @pause-preview="pausedPreviews[channel.id] = $event"
-                                @configure="Open('settings', channel.id)" @records="Open('records', channel.id)" @diagnose="Open('diagnostics', channel.id)" />
-                            <section v-for="index in emptySlots" :key="`empty-${index}`" class="video-panel" aria-label="未配置通道">
-                                <div class="video-picture"><div class="video-placeholder">未配置</div></div>
-                                <el-button link type="primary" @click="Open('settings')">配置通道</el-button>
-                            </section>
+                    <p v-if="!distribution.length" class="video-muted">{{ frameHint }}</p>
+                    <div v-for="result in frame?.modelResults || []" :key="result.id" class="video-model-result">
+                        <h3>{{ result.name }}</h3>
+                        <div v-if="result.detections.length" class="video-tags">
+                            <el-tag v-for="(item, index) in result.detections" :key="index" size="small" type="info">{{ DetectionText(item) }}</el-tag>
                         </div>
-                        <aside class="video-panel" aria-label="选中画面分析">
-                            <div class="video-heading"><h2>{{ selected?.name || '画面详情' }}</h2><el-tag size="small">帧 #{{ frame?.sequence ?? '—' }}</el-tag></div>
-                            <h3>当前帧目标分布</h3>
-                            <div v-for="row in distribution" :key="row.kind" class="video-bar">
-                                <span>{{ DetectionLabel(row.kind) }}</span>
-                                <el-progress :percentage="row.count * 100 / frame.detections.length" :show-text="false" />
-                                <strong>{{ row.count }}</strong>
-                            </div>
-                            <p v-if="!distribution.length" class="video-muted">{{ frameHint }}</p>
-                            <div class="video-tags" aria-label="当前帧置信度">
-                                <el-tag v-for="(item, index) in frame?.detections ?? []" :key="index" size="small" type="info">
-                                    {{ DetectionLabel(item.kind) }}{{ item.score == null ? '' : ` ${Math.round(item.score * 100)}%` }}
-                                </el-tag>
-                            </div>
-                            <dl class="video-fields">
-                                <dt>模型</dt><dd>{{ frame?.modelId ?? '—' }}</dd>
-                                <dt>源时间戳</dt><dd>{{ frame ? `${frame.elapsed} ms` : '—' }}</dd>
-                                <dt>输入规格</dt><dd>{{ frame ? `${frame.inputWidth} × ${frame.inputHeight}` : '—' }}</dd>
-                                <template v-if="selected?.algorithm.mode === 'motion'"><dt>变化面积</dt><dd>{{ frame?.motion?.toFixed(1) ?? '—' }} %</dd></template>
-                                <template v-else>
-                                    <dt>解码 / 预处理</dt><dd>{{ Timed('decode') }} / {{ Timed('preprocess') }}</dd>
-                                    <dt>后处理 / JPEG</dt><dd>{{ Timed('postprocess') }} / {{ Timed('jpeg') }}</dd>
-                                    <dt>管线耗时</dt><dd>{{ Timed('pipeline') }}</dd>
-                                </template>
-                            </dl>
-                        </aside>
+                        <p v-else class="video-muted">无符合阈值的结果</p>
                     </div>
+                    <dl class="video-fields">
+                        <dt>算法模型</dt><dd>{{ modelNames || '—' }}</dd>
+                        <dt>源时间戳</dt><dd>{{ frame ? `${frame.elapsed} ms` : '—' }}</dd>
+                        <dt>输入规格</dt><dd>{{ frame ? `${frame.inputWidth} × ${frame.inputHeight}` : '—' }}</dd>
+                        <template v-if="selected?.algorithm.mode === 'motion'"><dt>变化面积</dt><dd>{{ frame?.motion?.toFixed(1) ?? '—' }} %</dd></template>
+                        <template v-else>
+                            <dt>解码 / 预处理</dt><dd>{{ Timed('decode') }} / {{ Timed('preprocess') }}</dd>
+                            <dt>后处理 / JPEG</dt><dd>{{ Timed('postprocess') }} / {{ Timed('jpeg') }}</dd>
+                            <dt>管线耗时</dt><dd>{{ Timed('pipeline') }}</dd>
+                        </template>
+                    </dl>
+                </aside>
+            </div>
         </template>
         <VideoRecords v-else-if="tab === 'records'" :workspace="workspace" :initial-channel="routeChannel" />
         <VideoChannelList v-else-if="tab === 'settings'" :workspace="workspace" :initial-channel="routeChannel"
@@ -91,57 +86,38 @@
 </template>
 
 <script setup>
-import { computed, inject, reactive, ref, watch } from 'vue';
+import { computed, inject, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import VideoChannel from '@/components/video/VideoChannel.vue';
 import VideoRecords from '@/components/video/VideoRecords.vue';
 import VideoConfiguration from '@/components/video/VideoConfiguration.vue';
 import VideoChannelList from '@/components/video/VideoChannelList.vue';
 import VideoPerformance from '@/components/video/VideoPerformance.vue';
-import { DetectionLabel } from '@/demo/video-recognition';
-import { IsBrowserSource, VIDEO_WORKSPACE } from '@/demo/video-workspace';
+import { DetectionLabel, DetectionText } from '@/demo/video-recognition';
+import { ChannelModels, IsBrowserSource, VIDEO_WORKSPACE } from '@/demo/video-workspace';
 
 const route = useRoute();
 const router = useRouter();
 const workspace = inject(VIDEO_WORKSPACE);
 const routeChannel = computed(() => workspace.channels.some(channel => channel.id === route.query.channel) ? route.query.channel : '');
-const tab = computed({
-    get: () => ['records', 'settings', 'models', 'diagnostics'].includes(route.query.view) ? route.query.view : 'live',
-    set: next => Open(next)
-});
-const selectedId = ref(routeChannel.value || workspace.channels[0]?.id);
-const automaticLayout = computed(() => workspace.channels.length > 2 ? 4 : Math.max(1, workspace.channels.length));
-const manualLayout = ref(null);
-const pageIndex = ref(0);
-const layout = computed({
-    get: () => manualLayout.value ?? automaticLayout.value,
-    set: value => {
-        manualLayout.value = value;
-        FocusChannel(selectedId.value);
-    }
-});
-const pageCount = computed(() => Math.ceil(workspace.channels.length / layout.value));
-const visibleChannels = computed(() => workspace.channels.slice(pageIndex.value * layout.value, (pageIndex.value + 1) * layout.value));
-const emptySlots = computed(() => layout.value - visibleChannels.value.length);
-const selected = computed(() => workspace.channels.find(channel => channel.id === selectedId.value));
-const localFrames = reactive({});
-const pausedPreviews = reactive({});
+const tab = computed(() => ['records', 'settings', 'models', 'diagnostics'].includes(route.query.view) ? route.query.view : 'live');
+const selected = computed(() => workspace.channels.find(channel => channel.id === routeChannel.value) ?? workspace.channels[0]);
+const paused = ref(false);
+const localFrame = ref(null);
 const frame = computed(() => {
-    if (!selected.value) {
+    if (!selected.value || paused.value) {
         return null;
     }
-    if (IsBrowserSource(selected.value.source)) {
-        return localFrames[selectedId.value];
-    }
-    return pausedPreviews[selectedId.value] ? null : selected.value.frame;
+    return IsBrowserSource(selected.value.source) ? localFrame.value : selected.value.frame;
 });
 const frameHint = computed(() => {
-    if (pausedPreviews[selectedId.value]) {
+    if (paused.value) {
         return '选中通道的预览已暂停';
     }
     return frame.value ? '当前帧无检测目标' : '暂无检测帧';
 });
 const totalFps = computed(() => workspace.channels.reduce((sum, channel) => sum + (channel.frame?.timings ? channel.fps : 0), 0));
+const modelNames = computed(() => selected.value ? ChannelModels(workspace, selected.value).map(model => model.name).join('、') : '');
 const distribution = computed(() => {
     const counts = new Map();
     for (const item of frame.value?.detections ?? []) {
@@ -158,44 +134,14 @@ function Open(view, channel) {
     router.push({ name: 'videoRecognition', query });
 }
 
-function FocusChannel(id) {
-    const index = workspace.channels.findIndex(item => item.id === id);
-    pageIndex.value = index < 0 ? 0 : Math.floor(index / layout.value);
-}
-
-function GroupLabel(index) {
-    return workspace.channels.slice(index * layout.value, (index + 1) * layout.value).map(channel => channel.name).join(' / ');
-}
-
-function UpdateLocal(id, value) {
-    localFrames[id] = value;
-}
-
 function Timed(key) {
     const value = frame.value?.timings?.[key];
     return value == null ? '—' : `${value.toFixed(1)} ms`;
 }
 
-watch([tab, routeChannel], ([view, channel]) => {
-    if (channel) {
-        selectedId.value = channel;
-        if (view === 'live') {
-            FocusChannel(channel);
-        }
-    }
-    if (view !== 'live') {
-        Object.keys(localFrames).forEach(id => { delete localFrames[id]; });
-        Object.keys(pausedPreviews).forEach(id => { delete pausedPreviews[id]; });
-    }
-}, { immediate: true });
-watch(visibleChannels, entries => {
-    if (!entries.some(item => item.id === selectedId.value)) {
-        selectedId.value = entries[0]?.id;
-    }
-});
-watch(() => workspace.channels.length, () => {
-    manualLayout.value = null;
-    pageIndex.value = 0;
+watch([tab, () => selected.value?.id], () => {
+    localFrame.value = null;
+    paused.value = false;
 });
 </script>
 

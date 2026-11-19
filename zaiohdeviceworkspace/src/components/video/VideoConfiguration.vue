@@ -60,7 +60,7 @@
                     <dt>版本</dt><dd>{{ detail.version || '1.0.0' }}</dd>
                     <dt>设备平台</dt><dd>{{ detail.target.toUpperCase() }}</dd>
                     <dt>识别类别</dt><dd>{{ detail.labels.map(DetectionLabel).join('、') }}</dd>
-                    <dt>可配参数</dt><dd>{{ detail.kind === 'person' ? '置信度、NMS IoU' : '置信度' }}</dd>
+                    <dt>可配参数</dt><dd>{{ parameterLabels[detail.kind] }}</dd>
                     <dt>模型包</dt><dd>{{ detail.demo || detail.status === '内置基线' ? '演示 ZIP' : '算法模型 ZIP' }}</dd>
                     <template v-if="detail.size"><dt>大小</dt><dd>{{ Math.ceil(detail.size / 1024) }} KiB</dd></template>
                     <template v-if="detail.sha256"><dt>SHA-256</dt><dd>{{ detail.sha256 }}</dd></template>
@@ -92,6 +92,7 @@ const cloudOpen = ref(false);
 const detailOpen = ref(false);
 const fromCloud = ref(false);
 const detail = shallowRef(null);
+const parameterLabels = { person: '置信度、NMS IoU', yolo26n: '置信度', face: '相似度阈值' };
 
 function Show(model, cloud = false) {
     detail.value = model;
@@ -104,7 +105,8 @@ function Installed(model) {
 }
 
 function BoundChannels(id) {
-    return props.workspace.channels.filter(item => item.modelId === id && item.algorithm.mode === 'model').map(item => item.name).join('、') || '未绑定';
+    return props.workspace.channels.filter(item => item.algorithm.mode === 'model' && item.modelSettings.some(setting => setting.modelId === id))
+        .map(item => item.name).join('、') || '未绑定';
 }
 
 async function Install(blob, origin, catalogId) {
