@@ -126,7 +126,7 @@ import { ElMessage } from 'element-plus';
 import { DateText, DetectionLabel, DownloadBlob, DrawDetection, DrawModelSample } from '@/demo/video-recognition';
 import { FilterVideoRecords } from '@/demo/video-workspace';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 40;
 const EMPTY_FILTERS = { channel: '', query: '', start: '', end: '' };
 const props = defineProps({ workspace: Object, initialChannel: String });
 const draft = reactive({ ...EMPTY_FILTERS });

@@ -45,7 +45,7 @@ const openDialog = async () => {
  <style lang='scss'>
  .passwordCon{
   background: #FFFFFF;
-  padding: 10px;
+  padding: 16px 20px;
   border-radius: 12px;
   min-height:500px;
   .note{
@@ -64,19 +64,21 @@ const openDialog = async () => {
   .updpwd{
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: calc(80vh - 200px); 
-    gap: 10px;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding: 40px 0 0 24px;
+    gap: 18px;
   }
   .pwd-row{
     display: flex;
     align-items: center;
+    gap: 12px;
   }
   .pwd-con{
     font-weight: 400;
     font-size: 14px;
     color: rgba(0,0,0,0.6);
+    white-space: nowrap;
   }
  }
  </style>

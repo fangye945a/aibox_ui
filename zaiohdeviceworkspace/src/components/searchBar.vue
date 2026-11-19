@@ -107,11 +107,13 @@ defineExpose({curForm})
     color:#000;
     margin-bottom: 10px;
     .title{
-      font-size: 18px;
-      // border-bottom: 1px solid rgba(0,0,0,0.1);
-      padding-bottom: 16px;
+      font-size: 17px;
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid #EEE;
       font-weight: 600;
-      color:rgba(0,0,0,.9);
+      color: rgba(0,0,0,0.9);
+      line-height: 1.4;
       span{
         padding-right:20px;
         margin-right: 20px;

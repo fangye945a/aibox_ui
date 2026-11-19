@@ -1,27 +1,30 @@
 <template>
     <section class="recognition monitoring-container">
-        <div class="video-heading recognition-header"><h1>监控运维</h1><el-tag type="info" effect="plain">Mock 演示</el-tag></div>
-        <el-tabs v-model="section">
-            <el-tab-pane label="整机状态" name="device">
-                <template v-if="section === 'device'">
-                    <el-tabs v-model="activeTab">
-                        <el-tab-pane v-for="metric in metrics" :key="metric.type" :label="metric.title" :name="metric.type" />
-                    </el-tabs>
-                    <MonitorChartPanel :key="activeTab" :indicator-type="selected.type" :title="selected.title"
-                        :color="selected.color" :percent="selected.percent || false" :companion="companion" />
-                    <VideoPerformance :workspace="workspace" />
-                </template>
-            </el-tab-pane>
-            <el-tab-pane label="视频诊断" name="video">
-                <template v-if="section === 'video'">
-                    <el-radio-group :model-value="channelId" aria-label="诊断通道" @change="SelectChannel">
-                        <el-radio-button value="">全部通道</el-radio-button>
-                        <el-radio-button v-for="channel in workspace.channels" :key="channel.id" :value="channel.id">{{ channel.name }}</el-radio-button>
-                    </el-radio-group>
-                    <VideoPerformance :workspace="workspace" :channel-id="channelId" analysis @show-live="ShowLive" />
-                </template>
-            </el-tab-pane>
-        </el-tabs>
+        <!-- 整机状态 -->
+        <template v-if="section === 'device'">
+            <div class="video-heading recognition-header">
+                <h1>整机状态</h1>
+                <el-tag type="info" effect="plain">Mock 演示</el-tag>
+            </div>
+            <el-tabs v-model="activeTab">
+                <el-tab-pane v-for="metric in metrics" :key="metric.type" :label="metric.title" :name="metric.type" />
+            </el-tabs>
+            <MonitorChartPanel :key="activeTab" :indicator-type="selected.type" :title="selected.title"
+                :color="selected.color" :percent="selected.percent || false" :companion="companion" />
+            <VideoPerformance :workspace="workspace" />
+        </template>
+        <!-- 视频诊断 -->
+        <template v-else>
+            <div class="video-heading recognition-header">
+                <h1>视频诊断</h1>
+                <el-tag type="info" effect="plain">Mock 演示</el-tag>
+            </div>
+            <el-radio-group :model-value="channelId" aria-label="诊断通道" @change="SelectChannel">
+                <el-radio-button value="">全部通道</el-radio-button>
+                <el-radio-button v-for="channel in workspace.channels" :key="channel.id" :value="channel.id">{{ channel.name }}</el-radio-button>
+            </el-radio-group>
+            <VideoPerformance :workspace="workspace" :channel-id="channelId" analysis @show-live="ShowLive" />
+        </template>
     </section>
 </template>
 
@@ -35,10 +38,7 @@ import { VIDEO_WORKSPACE } from '@/demo/video-workspace';
 const workspace = inject(VIDEO_WORKSPACE);
 const route = useRoute();
 const router = useRouter();
-const section = computed({
-    get: () => route.query.view === 'video' ? 'video' : 'device',
-    set: view => router.push({ name: 'monitoring', query: view === 'video' ? { view } : {} })
-});
+const section = computed(() => route.query.view === 'video' ? 'video' : 'device');
 const channelId = computed(() => workspace.channels.some(item => item.id === route.query.channel) ? route.query.channel : '');
 
 const metrics = [
@@ -68,8 +68,8 @@ function ShowLive(id) {
 
 <style src="@/assets/css/video-workspace.css"></style>
 <style scoped>
-.monitoring-container { padding: 20px; background: #fff; border-radius: 12px; }
-:deep(.el-tabs__item) { height: 48px; font-size: 15px; }
+.monitoring-container { padding: 16px 20px; background: #fff; border-radius: 12px; }
+:deep(.el-tabs__item) { height: 46px; font-size: 14px; }
 :deep(.el-tabs__nav-wrap::after) { background: #edf1f5; height: 1px; }
 @media (max-width: 600px) { .monitoring-container { padding: 12px; } }
 </style>

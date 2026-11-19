@@ -1,9 +1,9 @@
 <template>
   <div class="loginMain">
-   <div class="loginContent">  
+    <div class="loginContent">
+    <!-- 右侧登录卡片 -->
     <div class="loginCon">
-      <!-- <p class="title">远程数据销毁管理</p> -->
-      <p class="tit">使用本地管理账号登录</p>
+      <p class="tit">边缘本地控制台</p>
       <el-form @keyup.enter="handleCurrentChange" ref="formRef" :model="form" :rules="rules"  label-width="0px"  @submit.prevent='handleCurrentChange'>
           <el-form-item label="" prop='user_name'>
             <el-input size='large' placeholder='请输入账号' :prefix-icon='User' v-model="form.user_name" clearable></el-input>
@@ -11,15 +11,11 @@
           <el-form-item label="" prop='password'>
             <el-input size='large' placeholder='请输入密码' :prefix-icon='Lock' v-model="form.password"  show-password clearable></el-input>
           </el-form-item>
-          <el-form-item>
-            <!-- <el-input placeholder='请输入验证码' prefix-icon='el-icon-picture-outline' v-model="form.captchaCode" style="width:150px;display:inline-block;"></el-input>
-            <img :src='src' class="imgs"> -->
-          </el-form-item>
       </el-form>
       
-      <el-button size='large' type="primary" native-type="button" @click="handleCurrentChange" style="width:100%;margin-top:25px;">登 录</el-button>
+      <el-button class="login-btn" size='large' type="primary" native-type="button" @click="handleCurrentChange" style="width:100%;margin-top:25px;">登 录</el-button>
       <p class="note">演示账号：demo，初始密码：Demo1234</p>
-      <el-button type="primary" link size="small" @click="restorePassword">恢复初始演示密码</el-button>
+      <el-button class="restore-btn" type="primary" link size="small" @click="restorePassword">恢复初始演示密码</el-button>
     </div>
     </div>
   </div>
@@ -88,44 +84,75 @@ const rsaEncrypt = data => data;
  .loginMain{
   width: 100%;
   height: 100%;
-  background:url(../assets/img/bj.png) no-repeat center #E6EEF5;//, linear-gradient(#50a1f5 10%, #074d95 100%);//;
+  background:url(../assets/img/bj.png) no-repeat center #E6EEF5;
   display: flex;
-  align-items: center;
-  .title{
-    font-size:26px;
-    text-align: center;
-    color:rgba(255,255,255,.9);
-    font-weight: bold;
-    position: absolute;
-    margin-left: 55px;
-    margin-top: -70px;
-  }
+  flex-direction: column;
   .loginContent{
-    width:60%;
-    margin:0px auto;
+    flex: 1;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 10% 32px 0;
+    min-height: 0;
   }
+  /* 右侧登录卡片 */
   .loginCon{
-    float:right;
-    width:460px;
-    height: 600px;
-    padding:40px 38px;
-    background:#fff;
+    width: 420px;
+    flex-shrink: 0;
+    padding: 44px 40px 36px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(13, 42, 76, 0.12);
     .tit{
       font-size: 24px;
-      padding-bottom: 30px;
-      font-weight: bold;
+      padding-bottom: 26px;
+      margin: 0;
+      font-weight: 600;
+      color: #0B5CAD;
     }
-    
     .note{
-      color:rgba(0,0,0,.4);
+      color: rgba(0, 0, 0, 0.45);
       font-size: 12px;
-      margin-top: 12px;
+      margin: 14px 0 4px;
     }
   }
-  input,button{
-      line-height: 48px;
+  .loginCon{
+    .el-input__wrapper{
+      padding: 4px 12px;
+    }
+    .el-input__inner{
+      height: 40px;
+      line-height: 40px;
+    }
+    .el-input__prefix,
+    .el-input__suffix{
+      height: 40px;
+    }
+    .login-btn{
       height: 48px;
+      padding: 0 20px;
+      line-height: 1;
+      font-size: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .restore-btn{
+      height: auto;
+      padding: 0;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+    }
   }
 
+ }
+ @media (max-width: 860px) {
+  .loginMain .loginContent{
+    justify-content: center;
+    padding: 16px 20px 24px;
+  }
  }
 </style>

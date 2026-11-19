@@ -204,7 +204,7 @@ onUnmounted(() => { disconnectRemoteDesktop(); });
   width: 100%;
   min-height: 80%;
   background-color: #FFFFFF;
-  padding: 10px;
+  padding: 16px 20px;
   border-radius: 12px;
 }
 
@@ -215,7 +215,7 @@ onUnmounted(() => { disconnectRemoteDesktop(); });
 }
 
 .remote-box-top-title {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.9);
   display: flex;

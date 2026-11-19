@@ -11,7 +11,17 @@
         <div class="up-box-center">
           <input ref="fileInput" type="file" accept=".zip" class="files" aria-label="选择升级文件"
                  :disabled="busy || jobActive" @change="selectFile">
-          <img src="@/assets/img/xiazai.png" class="center-image" alt="">
+          <svg class="center-image" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M24 6c10 0 18 7.4 18 16.5 0 1.6-.25 3.2-.72 4.66l2.9 2.9c.13-1.16.82-2.3.82-3.56C45 15.6 35.6 6 24 6 12.4 6 3 15.6 3 27.5c0 1.26.69 2.4.82 3.56l2.9-2.9C6.25 25.7 6 24.1 6 22.5C6 13.4 14 6 24 6Z" fill="url(#otaGrad)"/>
+            <path d="M23.2 32.4 15.4 24.6c-.6-.6-.6-1.5 0-2.1s1.5-.6 2.1 0l5 5V10.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v17l5-5c.6-.6 1.5-.6 2.1 0 .28.28.44.66.44 1.06s-.16.78-.44 1.04l-7.8 7.8c-.56.56-1.5.56-2.06 0Z" fill="#007CF7"/>
+            <path d="M12.5 33.5c0-.83.67-1.5 1.5-1.5h20c.83 0 1.5.67 1.5 1.5V37c0 .83-.67 1.5-1.5 1.5H14c-.83 0-1.5-.67-1.5-1.5v-3.5Z" fill="#007CF7"/>
+            <defs>
+              <linearGradient id="otaGrad" x1="24" y1="6" x2="24" y2="44" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#007CF7" stop-opacity=".28"/>
+                <stop offset="1" stop-color="#007CF7" stop-opacity=".06"/>
+              </linearGradient>
+            </defs>
+          </svg>
           <p class="up-font">{{ selectedFile || upload ? '点击重新选择升级文件' : '点击选择升级文件' }}</p>
         </div>
       </div>
@@ -275,19 +285,20 @@ onBeforeUnmount(() => { disposed = true; pauseUpload(); clearTimeout(timer); wor
 .sysup-box {
   min-height: 500px;
   height: 100%;
-  padding: 10px;
+  padding: 16px 20px;
   position: relative;
   background: #fff;
+  border-radius: 12px;
 }
 .sysup-box-title {
-  margin-bottom: 10px;
-  font-size: 18px;
-  font-weight: bold;
+  margin-bottom: 14px;
+  font-size: 17px;
+  font-weight: 600;
   color: rgba(0, 0, 0, 0.9);
 }
 .shengji-image {
   position: absolute;
-  top: 10px;
+  top: 14px;
   right: 10px;
 }
 .ota-content {
@@ -348,9 +359,10 @@ onBeforeUnmount(() => { disposed = true; pauseUpload(); clearTimeout(timer); wor
   gap: 10px;
 }
 .center-image {
-  width: 60px;
-  height: 60px;
+  width: 64px;
+  height: 64px;
   object-fit: contain;
+  display: block;
 }
 .up-font {
   font-size: 14px;

@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-.recognition { padding: 20px; background: #fff; border-radius: 8px; color: inherit; font-size: 14px; line-height: 1.5; min-width: 0; }
+.recognition { padding: 16px 20px; background: #fff; border-radius: 12px; color: inherit; font-size: 14px; line-height: 1.5; min-width: 0; }
 .recognition h1, .recognition h2, .recognition h3 { margin: 0; line-height: 1.4; }
-.recognition h1 { font-size: 20px; }
-.recognition h2 { font-size: 16px; }
-.recognition h3 { font-size: 14px; }
-.recognition-header { padding-bottom: 8px; }
+.recognition h1 { font-size: 17px; font-weight: 600; color: rgba(0,0,0,0.9); }
+.recognition h2 { font-size: 15px; font-weight: 600; color: rgba(0,0,0,0.9); }
+.recognition h3 { font-size: 14px; font-weight: 600; color: rgba(0,0,0,0.85); }
+.recognition-header { padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid #EEE; }
 .recognition .el-tabs__item { padding-inline: 13px; }
 .recognition .el-table, .recognition .el-tabs__content, .recognition .el-form-item { min-width: 0; }
 .recognition .el-table { width: 100%; }
@@ -71,7 +71,7 @@
 .recognition .video-fields dd { margin: 0; overflow-wrap: anywhere; }
 .recognition .video-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .recognition .video-bar { display: grid; grid-template-columns: minmax(42px, auto) minmax(0, 1fr) auto; align-items: center; gap: 10px; margin: 6px 0; font-size: 12px; }
-.recognition .video-metric-value { margin: 7px 0; font-size: 23px; font-weight: 600; }
+.recognition .video-metric-value { margin: 6px 0; font-size: 24px; font-weight: 600; color: rgba(0,0,0,0.9); }
 .recognition .video-metric-value small { font-size: 12px; font-weight: 400; }
 .recognition .video-trend { display: block; width: 100%; max-width: 520px; }
 .recognition .video-snapshot { display: block; width: 100%; height: auto; }

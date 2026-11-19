@@ -3,7 +3,7 @@
       <!-- 首页头部 -->
       <div class="home-top-box">
           <div class="home-top-box-left">
-              <img src='@/assets/img/ct21b.png'>
+              <img class="device-photo" src='@/assets/img/ct21b-hd.png' alt="在鸿工控机">
               <div v-if="data && data.device_info">
                 <p class="home-top-box-productModel">在鸿工控机-{{ data.device_info.product_model }}</p>
                 <p class="home-top-box-deviceId">设备编号：{{ data.device_info.device_id }}</p>
@@ -257,21 +257,23 @@
               </div>
             </div>
           </div>
-      <!-- 重启确认弹窗 -->
+      <!-- 重启确认弹窗（与系统升级确认弹窗同风格） -->
       <el-dialog
       v-model="restartDialogVisible"
       title="重启"
-      width="36%"
-      :before-close="handleClose"
+      width="420px"
+      :close-on-click-modal="false"
+      class="restart-dialog"
       >
-      <div style="padding: 10px 0;">
-        <p style="font-weight: 400;font-size: 14px;color: rgba(0,0,0,0.9);">
+      <div class="restart-confirm">
+        <el-icon class="restart-confirm-icon" color="#E6A23C" :size="22"><WarningFilled /></el-icon>
+        <p class="restart-confirm-text">
           确定要重启设备吗？重启过程中页面功能将无法使用。
         </p>
       </div>
-  
+
       <template #footer>
-        <span>
+        <span class="dialog-footer">
           <el-button @click="restartDialogVisible = false">取消</el-button>
           <el-button type="primary" @click="confirmRestart">重启</el-button>
         </span>
@@ -288,7 +290,7 @@ import { getInfo ,restart} from "@/api/api.home";
 import { ref, shallowRef, onMounted, watch ,computed ,onUnmounted, reactive} from 'vue';
 import * as echarts from 'echarts';
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
+import { ArrowLeft, ArrowRight , WarningFilled } from '@element-plus/icons-vue'
 import { Clock } from '@element-plus/icons-vue'
 import wdjf from '@/assets/img/wdjf.png';
 import wdjt from '@/assets/img/wdjt.png';
@@ -801,24 +803,30 @@ onUnmounted(() => {
     height: 120px;
     background: #FFFFFF;
     border-radius: 12px;
-    padding: 10px;
+    padding: 16px 20px;
   }
-  .home-top-box-productModel{   
+  .home-top-box-productModel{
     font-weight: bold;
-    font-size: 24px;
-    color: rgba(0,0,0,0.9);
+    font-size: 26px;
+    color: #0B5CAD;
     text-transform: none;
   }
   .home-top-box-deviceId{
     font-weight: 400;
-    font-size: 16px;
+    font-size: 15px;
     color: rgba(0,0,0,0.6);
   }
   .home-top-box-left,.home-top-box-right{
     gap: 10px;
     display: flex;
     align-items: center;
-    height: auto; 
+    height: auto;
+    .device-photo{
+      height: 88px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
   }
   .home-top-box-time{
     font-weight: bold;
@@ -862,12 +870,12 @@ onUnmounted(() => {
   .home-center-box-left,.home-center-box-right{
     width: 100%;
     height: auto;
-    padding:10px;
+    padding:16px;
     border-radius: 12px;
     background: #FFFFFF;
-    font-weight: 500;
-    font-size: 18px;
-    color: rgba(0,0,0,0.9);   
+    font-weight: 600;
+    font-size: 15px;
+    color: rgba(0,0,0,0.9);
   }
   .home-center-box-center{
     width: 100%;
@@ -877,7 +885,7 @@ onUnmounted(() => {
   }
   .home-center-box-center-top,.home-center-box-center-bottom{
     height: 50%;
-    padding:10px;
+    padding:16px;
     border-radius: 12px;
     background: #FFFFFF;
   }
@@ -886,16 +894,16 @@ onUnmounted(() => {
   }
   .home-center-box-center-top-title{
     width: 50%;
-    font-weight: 500;
-    font-size: 18px;
+    font-weight: 600;
+    font-size: 15px;
     color: rgba(0,0,0,0.9);
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
   
   .home-center-box-left-t{
-    font-weight: 500;
-    font-size: 20px;
-    color: #000000;
+    font-weight: 600;
+    font-size: 17px;
+    color: rgba(0,0,0,0.9);
     display: flex;
     justify-content: center;
   }
@@ -956,11 +964,11 @@ onUnmounted(() => {
   }
   .home-bottom-box-left-title{
     background: rgba(0,124,247,0.05);
-    border-radius: 6px 6px 6px 6px;
-    font-weight: 500;
-    font-size: 18px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 15px;
     color: rgba(0,0,0,0.9);
-    padding: 10px;
+    padding: 10px 12px;
   }
   .formclass{
     display: flex;
@@ -1080,9 +1088,9 @@ onUnmounted(() => {
   }
 
   .legend-value {
-    font-weight: 500;
-    font-size: 20px;
-    color: #000000;
+    font-weight: 600;
+    font-size: 17px;
+    color: rgba(0,0,0,0.9);
     margin-left:6px ;
   }
   .hrr{
@@ -1118,7 +1126,7 @@ onUnmounted(() => {
   .memory-status {
   position: absolute;
   bottom: 44px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
   color: #FFFFFF;
   }
@@ -1195,15 +1203,34 @@ onUnmounted(() => {
     }
   }
   }
-  .el-dialog__footer{
-    width: 100%;
-    padding: 10px;
-    border-top:1px solid #eee ;
+  .restart-dialog .el-dialog__footer{
+    padding: 10px 20px 18px;
+    text-align: right;
   }
-  .el-dialog__title{
-    font-weight: 400;
+  .restart-dialog .el-dialog__title{
+    font-weight: 600;
     font-size: 16px;
     color: #1D2129;
+    line-height: 24px;
+  }
+  .restart-dialog .el-dialog__header{
+    padding-bottom: 10px;
+  }
+  .restart-confirm{
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 4px 4px;
+    .restart-confirm-icon{
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .restart-confirm-text{
+      margin: 0;
+      font-size: 14px;
+      line-height: 22px;
+      color: rgba(0,0,0,0.85);
+    }
   }
   .no-data-container {
   display: flex;
@@ -1221,9 +1248,12 @@ onUnmounted(() => {
     color: rgba(0, 0, 0, 0.45);
   }
   }
-  .el-dialog__header{
-    border-bottom: 1px solid #eee;
-    padding: 10px 0px;
+  .restart-dialog .el-dialog__header{
+    padding: 18px 20px 6px;
+    margin-right: 0;
+  }
+  .restart-dialog .el-dialog__body{
+    padding: 0 20px;
   }
  }
 </style>

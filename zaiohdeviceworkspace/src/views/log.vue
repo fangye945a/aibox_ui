@@ -905,31 +905,30 @@ onMounted(() => {
 .log-box{
   width: 100%;
   height: 100%;
-  background: #F2F4F5;
-  padding: 10px;
+  background: transparent;
+  padding: 0;
   border-radius: 12px;
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 .flex{
   display: flex;
 }
 .log-box-left{
   min-width: 200px;
-  border-radius: 4px;
   background: #FFFFFF;
   border-radius: 12px;
 }
 .log-box-left-title{
-  padding: 6px;
+  padding: 14px 16px 12px;
   border-bottom: 1px solid #eee;
   margin: 0;
-  font-weight: 400;
-  font-size: 18px;
-  color: #000000;
+  font-weight: 600;
+  font-size: 17px;
+  color: rgba(0,0,0,0.9);
 }
 .log-tabs {
-  padding: 6px;
+  padding: 8px;
 }
 .log-tab {
   padding: 12px ;
@@ -953,7 +952,7 @@ onMounted(() => {
   flex: 1;
   min-width: 0;
   background: #FFFFFF;
-  padding: 10px;
+  padding: 16px 20px;
   border-radius: 12px;
 }
 .log-top{

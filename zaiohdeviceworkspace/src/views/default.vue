@@ -1,16 +1,14 @@
 <template>
   <div class="vl-main">
-    <!--头部-->
-    <vl-header></vl-header>
-    <!--内容区-->
-    <div class="vl-content">
-      <!--侧边-->
-      <vl-slide></vl-slide>
+    <!--左侧全高导航-->
+    <vl-slide></vl-slide>
+    <!--右侧区域-->
+    <div class="right-area">
+      <!--头部-->
+      <vl-header></vl-header>
       <!--内容-->
       <div class="content-box">
-        <!-- <div class='contentBox'> -->
-           <router-view></router-view>
-        <!-- </div> -->
+        <router-view></router-view>
       </div>
     </div>
     <!--底部-->
@@ -81,29 +79,26 @@
     height: 100%;
     color: #2B3F5C;
     font-size: .16rem;
-  }
-  .vl-content {
-    background:#F2F4F5;
-    height: calc(100% - 48px);
     display: flex;
-    justify-content: space-between;
-    .content-box {
-      width:100%;
-      padding:16px 24px;
-      height: 100%;
-      overflow: hidden;
-      background:#F2F4F5;
-      overflow-y: auto;
-      // border: 16px solid #F5F5F5;
-      // .contentBox{
-        
-      //   min-height:100%;
-      // }
-    }
+    overflow: hidden;
+  }
+  .right-area {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .content-box {
+    flex: 1;
+    min-height: 0;
+    padding: 16px 24px;
+    overflow-y: auto;
+    background: #F2F4F5;
   }
   @media (max-width: 620px) {
-    .vl-content:has(> .video-nav-shell) > .content-box {
-      min-width: 0;
+    .content-box {
       padding: 10px;
     }
   }
