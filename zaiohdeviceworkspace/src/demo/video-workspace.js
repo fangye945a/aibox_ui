@@ -20,7 +20,7 @@ import { CompareFrames, DrawSample, SAMPLE_HEIGHT, SAMPLE_WIDTH } from '@/utils/
 
 export const VIDEO_WORKSPACE = Symbol('video-workspace');
 const CONFIG_KEY = 'video-workspace';
-export const MAX_VIDEO_CHANNELS = 4;
+export const MAX_VIDEO_CHANNELS = 32;
 const SAMPLE_COUNT = 100;
 const RECORD_LIMIT = 400;
 const HOUR_MS = 3600000;

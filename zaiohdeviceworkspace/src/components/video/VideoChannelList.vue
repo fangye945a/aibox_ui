@@ -75,7 +75,7 @@ function Edit(channel) {
 function Save(channel) {
     if (creating.value) {
         if (props.workspace.channels.length >= MAX_VIDEO_CHANNELS) {
-            ElMessage.warning('最多配置四路通道');
+            ElMessage.warning(`最多配置 ${MAX_VIDEO_CHANNELS} 路通道`);
             return;
         }
         props.workspace.channels.push(channel);
