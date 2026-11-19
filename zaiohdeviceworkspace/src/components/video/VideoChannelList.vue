@@ -11,31 +11,51 @@
 -->
 <template>
     <section class="video-section" aria-label="通道列表">
-        <div class="video-heading">
-            <h2>已配置通道 <small>{{ workspace.channels.length }} / {{ MAX_VIDEO_CHANNELS }}</small></h2>
+        <div class="video-heading recognition-header">
+            <div>
+                <h1>通道配置</h1>
+                <p class="video-subtitle">已配置 {{ workspace.channels.length }} / {{ MAX_VIDEO_CHANNELS }} 路</p>
+            </div>
             <el-button type="primary" :icon="Plus" :disabled="workspace.channels.length >= MAX_VIDEO_CHANNELS" @click="Add">添加通道</el-button>
         </div>
-        <el-table :data="workspace.channels" row-key="id" empty-text="暂无通道，请添加通道" stripe>
-            <el-table-column prop="name" label="通道名称" min-width="125" />
-            <el-table-column label="视频源" min-width="150">
-                <template #default="{ row }">{{ VideoSourceName(workspace, row.source) }}</template>
-            </el-table-column>
-            <el-table-column label="算法模型" min-width="130">
-                <template #default="{ row }">{{ ModelName(row) }}</template>
-            </el-table-column>
-            <el-table-column label="状态" min-width="100">
-                <template #default="{ row }"><el-tag size="small" effect="plain">{{ VideoChannelStatus(row) }}</el-tag></template>
-            </el-table-column>
-            <el-table-column label="操作" width="180">
-                <template #default="{ row }">
-                    <el-button link type="primary" @click="Edit(row)">编辑</el-button>
-                    <el-button link type="primary" @click="$emit('show-live', row.id)">预览</el-button>
-                    <el-button link type="danger" @click="Remove(row)">删除</el-button>
-                </template>
-            </el-table-column>
-        </el-table>
-        <el-dialog v-model="open" :title="creating ? '添加通道' : '编辑通道'" width="min(880px, 94vw)" append-to-body destroy-on-close>
-            <div v-if="open && editing" class="recognition video-dialog">
+        <div v-if="workspace.channels.length" class="video-channel-filter" aria-label="筛选通道">
+            <el-input v-model="keyword" aria-label="搜索通道名称" placeholder="搜索通道名称" :prefix-icon="Search" clearable />
+            <el-select v-model="status" aria-label="通道状态">
+                <el-option v-for="item in statuses" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+        </div>
+        <table v-if="rows.length" class="video-channel-table" role="table" aria-label="已配置通道">
+            <thead role="rowgroup">
+                <tr role="row">
+                    <th scope="col">通道名称</th><th scope="col">视频源</th><th scope="col">算法模型</th><th scope="col">状态</th><th scope="col">操作</th>
+                </tr>
+            </thead>
+            <tbody role="rowgroup">
+                <tr v-for="{ channel, names } in rows" :key="channel.id" role="row">
+                    <th role="rowheader" scope="row" class="video-channel-name">{{ channel.name }}</th>
+                    <td role="cell" class="video-channel-source">{{ VideoSourceName(workspace, channel.source) }}</td>
+                    <td role="cell" class="video-channel-models">
+                        <div class="video-tags">
+                            <el-tag v-for="(name, index) in names" :key="index" size="small" effect="plain">{{ name }}</el-tag>
+                        </div>
+                    </td>
+                    <td role="cell" class="video-channel-state">
+                        <el-tag :type="VideoStatusType(channel)" size="small" effect="light">{{ VideoChannelStatus(channel) }}</el-tag>
+                    </td>
+                    <td role="cell" class="video-channel-actions">
+                        <div class="video-actions">
+                            <el-button link type="primary" @click="$emit('show-live', channel.id)">预览</el-button>
+                            <el-button link type="primary" @click="Edit(channel)">编辑</el-button>
+                            <el-button link type="danger" @click="Remove(channel)">删除</el-button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <el-empty v-else :description="workspace.channels.length ? '没有匹配的通道' : '暂无通道，请添加通道'" :image-size="72" />
+        <el-dialog v-model="open" :title="creating ? '添加通道' : '编辑通道'" class="channel-settings-dialog" width="min(880px, 94vw)"
+            append-to-body destroy-on-close>
+            <div v-if="open && editing" class="recognition video-dialog channel-editor">
                 <VideoChannelSettings :key="editing.id" :channel="editing" :workspace="workspace" :creating="creating" @saved="Save" @cancel="open = false" />
             </div>
         </el-dialog>
@@ -43,11 +63,11 @@
 </template>
 
 <script setup>
-import { ref, shallowRef, watch } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus } from '@element-plus/icons-vue';
+import { Plus, Search } from '@element-plus/icons-vue';
 import {
-    ChannelModels, IsBrowserSource, MakeChannel, MAX_VIDEO_CHANNELS, SaveVideoWorkspace, StartVideoChannel, VideoChannelStatus, VideoSourceName
+    ChannelModels, IsBrowserSource, MakeChannel, MAX_VIDEO_CHANNELS, SaveVideoWorkspace, StartVideoChannel, VideoChannelStatus, VideoSourceName, VideoStatusType
 } from '@/demo/video-workspace';
 import VideoChannelSettings from './VideoChannelSettings.vue';
 
@@ -56,6 +76,20 @@ defineEmits(['show-live']);
 const open = ref(false);
 const creating = ref(false);
 const editing = shallowRef(null);
+
+const keyword = ref('');
+const status = ref('all');
+const statuses = [
+    { value: 'all', label: '全部状态' }, { value: 'running', label: '运行中' }, { value: 'stopped', label: '已停止' },
+    { value: 'error', label: '输入故障' }, { value: 'browser', label: '浏览器本地输入' }
+];
+const rows = computed(() => {
+    const query = keyword.value.trim().toLowerCase();
+    return props.workspace.channels.filter(channel => {
+        const state = IsBrowserSource(channel.source) ? 'browser' : channel.state;
+        return (status.value === 'all' || state === status.value) && channel.name.toLowerCase().includes(query);
+    }).map(channel => ({ channel, names: ModelNames(channel) }));
+});
 
 function Add() {
     const used = new Set(props.workspace.channels.map(item => item.name));
@@ -90,6 +124,8 @@ function Save(channel) {
         if (added.autostart && !IsBrowserSource(added.source)) {
             StartVideoChannel(props.workspace, added);
         }
+        keyword.value = '';
+        status.value = 'all';
         ElMessage.success('通道已添加');
     }
     open.value = false;
@@ -113,11 +149,12 @@ async function Remove(channel) {
     }
 }
 
-function ModelName(channel) {
+function ModelNames(channel) {
     if (channel.algorithm.mode !== 'model') {
-        return channel.algorithm.mode === 'motion' ? '画面变化检测' : '仅预览';
+        return [channel.algorithm.mode === 'motion' ? '画面变化检测' : '仅预览'];
     }
-    return ChannelModels(props.workspace, channel).map(model => model.name).join('、') || '不可用';
+    const names = ChannelModels(props.workspace, channel).map(model => model.name);
+    return names.length ? names : ['不可用'];
 }
 
 watch(() => props.initialChannel, id => {

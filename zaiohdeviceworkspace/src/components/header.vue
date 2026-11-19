@@ -2,11 +2,11 @@
   <div class="vl-header flex-between">
     <div class="page-title">{{ pageTitle }}</div>
     <div class='headTxt cursor'>
-      <el-avatar :size="35" :src="require('@/assets/img/peo.png')" class="userPhoto"></el-avatar>|
-      <span class="logout-btn" role="button" tabindex="0" @click="gotoUrl">
+      <el-avatar :size="35" :src="require('@/assets/img/peo.png')" class="userPhoto"></el-avatar>
+      <button type="button" class="logout-btn" aria-label="退出登录" @click="gotoUrl">
         <svg-icon icon-class="logout" class="logout-icon" />
         <span class="logout-text">退出登录</span>
-      </span>
+      </button>
     </div>
   </div>
 </template>
@@ -17,11 +17,11 @@ export default {
       const name = this.$route.name;
       const view = this.$route.query.view;
       if (name === 'monitoring') {
-        return '监控运维 · 整机状态';
+        return '监控运维';
       }
       if (name === 'videoRecognition') {
-        const map = { records: '检测记录', settings: '通道配置', models: '模型管理', diagnostics: '视频诊断' };
-        return view && map[view] ? `视频分析 · ${map[view]}` : '视频分析 · 实时检测';
+        const map = { records: '检测记录', models: '模型管理', diagnostics: '视频诊断' };
+        return view && map[view] ? `视频分析 · ${map[view]}` : '视频分析';
       }
       const titles = {
         home: '首页',
@@ -57,12 +57,16 @@ export default {
     font-size: 14px;
     font-weight: 600;
     color: #1D2129;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
   .headTxt{
     padding-right: 24px;
     display: flex;
     align-items: center;
+    flex-shrink: 0;
     color: rgba(0,0,0,.45);
     cursor: pointer;
   }
@@ -74,9 +78,12 @@ export default {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    margin-left: 14px;
     padding: 6px 10px;
+    border: 0;
     border-radius: 6px;
+    background: transparent;
+    white-space: nowrap;
+    cursor: pointer;
     color: #1D2129;
     transition: background-color 0.2s, color 0.2s;
     &:hover {
@@ -93,6 +100,13 @@ export default {
   .logout-text {
     font-size: 13px;
     line-height: 1;
+  }
+}
+@media (max-width: 620px) {
+  .vl-header {
+    .page-title { padding: 0 12px; }
+    .headTxt { padding-right: 8px; }
+    .userPhoto { display: none; }
   }
 }
 </style>

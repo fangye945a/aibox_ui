@@ -117,8 +117,8 @@
           this.isCollapse = true;
         }
         const query = { ...(target.query || {}) };
-        // 保留通道参数（视频诊断/检测记录等场景跳转会带上 channel）
-        if (this.$route.query.channel && target.rName === this.$route.name) {
+        // 侧栏进入通道配置时先显示列表，画面中的配置入口直接编辑当前通道。
+        if (this.$route.query.channel && target.rName === this.$route.name && query.view !== 'settings') {
           query.channel = this.$route.query.channel;
         }
         this.$router.push({ name: target.rName, query });

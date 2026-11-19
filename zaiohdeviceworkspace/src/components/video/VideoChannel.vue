@@ -10,18 +10,14 @@
  limitations under the License.
 -->
 <template>
-    <section class="video-panel" :class="{ 'video-selected': selected }" :aria-label="channel.name">
-        <div class="video-heading">
-            <h2><el-button text :type="selected ? 'primary' : ''" :aria-pressed="selected" @click="$emit('select')">{{ channel.name }}</el-button></h2>
-            <el-tag v-if="!previewOnly" size="small" :type="stateType">{{ VideoChannelStatus(channel) }}</el-tag>
-        </div>
-        <div ref="picture" class="video-picture" @click="$emit('select')" @dblclick="Fullscreen">
+    <section class="video-panel video-player" :aria-label="channel.name">
+        <div ref="picture" class="video-picture" @dblclick="Fullscreen">
             <canvas ref="canvas" :width="WIDTH" :height="HEIGHT" :aria-label="`${channel.name}实时画面`"></canvas>
             <video ref="video" muted playsinline hidden @ended="Complete" @error="MediaFailed"></video>
             <div v-if="placeholder" class="video-placeholder"><el-icon :size="28"><VideoCamera /></el-icon>{{ placeholder }}</div>
             <el-button class="video-fullscreen" :icon="FullScreen" title="全屏" aria-label="全屏" circle size="small" @click.stop="Fullscreen" />
         </div>
-        <p class="video-muted">{{ VideoSourceName(workspace, channel.source) }} · 预览 {{ browserSource ? localFps : paused ? 0 : channel.fps }} FPS</p>
+        <p class="video-muted video-source-caption">{{ VideoSourceName(workspace, channel.source) }} · 预览 {{ browserSource ? localFps : paused ? 0 : channel.fps }} FPS</p>
         <p v-if="localState === 'completed'" class="video-muted">本地视频播放完成</p>
         <el-alert v-if="channel.error || localError" :title="channel.error || localError" type="error" :closable="false" show-icon />
         <div v-if="!previewOnly || browserSource" class="video-actions">
@@ -48,8 +44,8 @@ import { AnalyzeModels, ChannelModels, IsBrowserSource, StartVideoChannel, StopV
 
 const WIDTH = 640;
 const HEIGHT = 360;
-const props = defineProps({ channel: Object, workspace: Object, selected: Boolean, previewOnly: Boolean });
-const emit = defineEmits(['select', 'configure', 'records', 'diagnose', 'local-frame', 'pause-preview']);
+const props = defineProps({ channel: Object, workspace: Object, previewOnly: Boolean });
+const emit = defineEmits(['configure', 'records', 'diagnose', 'local-frame', 'pause-preview']);
 const channel = props.channel;
 const canvas = ref(null);
 const video = ref(null);
@@ -61,7 +57,6 @@ const localFrame = shallowRef(null);
 const localFps = ref(0);
 const models = computed(() => ChannelModels(props.workspace, channel));
 const browserSource = computed(() => IsBrowserSource(channel.source));
-const stateType = computed(() => browserSource.value ? 'info' : ({ running: 'success', error: 'danger' }[channel.state] ?? 'info'));
 const placeholder = computed(() => {
     if (browserSource.value) {
         return { idle: '本地预览未打开', opening: '正在打开本地预览', active: '', completed: '' }[localState.value];
@@ -156,11 +151,11 @@ function Render(context, timestamp, runtime) {
         motionDetections.forEach(item => DrawDetection(context, item));
     }
     const analysis = mode === 'model' ? AnalyzeModels(models.value, elapsed, sequence) : { detections: motionDetections };
+    localFps.value = Math.min(16, Math.round(1000 / Math.max(1, timestamp - runtime.lastPaint)));
     localFrame.value = {
-        sequence, elapsed, ...analysis, motion: runtime.motion,
+        sequence, elapsed, ...analysis, motion: runtime.motion, fps: localFps.value,
         inputWidth: runtime.media.videoWidth, inputHeight: runtime.media.videoHeight
     };
-    localFps.value = Math.min(16, Math.round(1000 / Math.max(1, timestamp - runtime.lastPaint)));
     runtime.lastPaint = timestamp;
 }
 

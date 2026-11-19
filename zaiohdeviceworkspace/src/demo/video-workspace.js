@@ -174,6 +174,14 @@ export function VideoChannelStatus(channel) {
     return { stopped: '已停止', running: '运行中', error: '输入故障' }[channel.state];
 }
 
+/** @brief 返回通道状态对应的视觉类型。 */
+export function VideoStatusType(channel) {
+    if (IsBrowserSource(channel.source)) {
+        return 'info';
+    }
+    return { running: 'success', error: 'danger', stopped: 'info' }[channel.state];
+}
+
 /** @brief 保留最近故障原因，便于通道恢复后继续排查。 */
 export function FailVideoChannel(channel, reason) {
     Object.assign(channel, { state: 'error', frame: null, fps: 0, error: reason, lastFailure: reason, failedAt: Date.now() });

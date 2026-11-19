@@ -31,10 +31,7 @@
 .recognition .video-divider { border-top: 1px solid #e7ebef; margin: 18px 0 10px; padding-top: 14px; }
 .recognition .video-columns, .recognition .video-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 12px; }
 .recognition .video-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 12px; align-items: stretch; }
-.recognition .video-live { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, 290px); gap: 12px; }
 .recognition .video-panel { padding: 12px; border: 1px solid #e1e7ed; border-radius: 6px; min-width: 0; overflow-wrap: anywhere; }
-.recognition .video-panel h2 .el-button { padding-inline: 0; font-size: inherit; }
-.recognition .video-selected { border-color: var(--el-color-primary); }
 .recognition .video-picture { position: relative; aspect-ratio: 16 / 9; background: #17202a; border-radius: 4px; overflow: hidden; cursor: pointer; }
 .recognition .video-picture:fullscreen { display: grid; place-items: center; border-radius: 0; }
 .recognition .video-picture canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
@@ -75,9 +72,6 @@
 .recognition .video-metric-value small { font-size: 12px; font-weight: 400; }
 .recognition .video-trend { display: block; width: 100%; max-width: 520px; }
 .recognition .video-snapshot { display: block; width: 100%; height: auto; }
-@media (max-width: 1180px) {
-    .recognition .video-live { grid-template-columns: minmax(0, 1fr); }
-}
 @media (max-width: 780px) {
     .recognition .video-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -86,11 +80,7 @@
     .recognition .video-columns, .recognition .video-metrics { grid-template-columns: minmax(0, 1fr); }
 }
 
-.recognition .video-channel-picker { justify-content: flex-start; gap: 12px; margin-bottom: 12px; }
-.recognition .video-channel-picker .el-select { width: min(100%, 240px); }
 .recognition .video-algorithm-fields { border: 1px solid #e6ebf0; border-radius: 6px; padding: 10px; margin-bottom: 10px; }
-.recognition .video-model-result { margin: 10px 0; }
-.recognition .video-algorithm-fields legend { padding: 0 4px; font-weight: 600; }
 .recognition.video-dialog { padding: 0; }
 .recognition .video-model-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; margin-top: 12px; }
 .recognition .video-model-summary {
@@ -109,3 +99,91 @@
 .recognition .video-model-summary:hover { color: var(--el-color-primary); }
 .recognition .video-model-summary span { flex: 1; min-width: 0; }
 .recognition .video-model-summary small { display: block; color: #596b78; margin-top: 3px; }
+
+.recognition .video-live-toolbar, .recognition .video-channel-picker, .recognition .video-live-meta, .recognition .video-channel-filter {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 12px;
+}
+.recognition .video-live-toolbar {
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    border: 1px solid #dce6ef;
+    border-radius: 8px;
+    background: #f4f7fb;
+}
+.recognition .video-channel-picker { flex-wrap: nowrap; }
+.recognition .video-channel-picker label { flex-shrink: 0; }
+.recognition .video-channel-picker .el-select { width: 240px; }
+.recognition .video-live-meta { color: #41566b; font-size: 13px; }
+.recognition .video-live-meta strong { color: #203a55; font-variant-numeric: tabular-nums; margin-left: 4px; }
+.recognition .video-live { display: grid; gap: 12px; align-items: start; grid-template-columns: minmax(0, 1fr) minmax(265px, 310px); }
+.recognition .video-source-caption { margin: 8px 0 0; font-size: 13px; }
+.recognition .video-result-count { color: #52667c; font-size: 12px; font-variant-numeric: tabular-nums; }
+.recognition .video-model-result { border-top: 1px solid #e2e9f0; padding-top: 10px; margin-top: 10px; }
+.recognition .video-results p, .recognition .video-results .video-tags { margin: 6px 0 0; }
+.recognition .video-runtime-details { border-top: 1px solid #e2e9f0; padding-top: 10px; margin-top: 12px; }
+.recognition .video-runtime-details summary, .recognition .video-algorithm-fields summary { cursor: pointer; font-weight: 600; }
+.recognition .video-runtime-details summary { color: #315e85; }
+.recognition .video-subtitle { margin: 4px 0 0; color: #52667c; }
+.recognition .video-channel-filter { margin: 0 0 12px; }
+.recognition .video-channel-filter .el-input { width: min(100%, 260px); }
+.recognition .video-channel-filter .el-select { width: min(100%, 160px); }
+.recognition .video-channel-table { width: 100%; border-collapse: collapse; text-align: left; color: #304457; }
+.recognition .video-channel-table th, .recognition .video-channel-table td { padding: 12px 10px; border-bottom: 1px solid #e3eaf1; }
+.recognition .video-channel-table thead { background: #f4f7fb; color: #44596e; font-size: 13px; }
+.recognition .video-channel-table tbody tr:hover { background: #f7fafe; }
+.recognition .video-channel-name { font-weight: 600; overflow-wrap: anywhere; }
+.recognition .video-channel-source { color: #516579; }
+.recognition .video-channel-actions .video-actions { margin-top: 0; }
+.recognition .video-channel-actions .el-button { min-height: 28px; }
+.recognition .video-algorithm-fields { background: #f7f9fc; }
+.recognition .video-algorithm-inputs { margin-top: 10px; }
+.recognition .el-tag--info { --el-tag-text-color: #53677c; }
+.recognition .el-tag--success { --el-tag-text-color: #28613e; }
+.recognition .el-tag--warning { --el-tag-text-color: #8c500c; }
+.recognition .el-tag--danger { --el-tag-text-color: #9f3535; }
+
+.channel-settings-dialog.el-dialog { --el-dialog-margin-top: 5vh; }
+.channel-settings-dialog .el-dialog__body { padding-bottom: 0; }
+.channel-editor .video-form { display: flex; flex-direction: column; max-height: calc(90vh - 90px); max-height: calc(90dvh - 90px); }
+.channel-editor .video-form > .video-columns { overflow: auto; min-height: 0; padding: 2px; }
+.channel-editor .video-form .channel-editor-footer {
+    flex-shrink: 0;
+    border-top: 1px solid #e3eaf1;
+    padding: 12px 0;
+    margin-top: 8px;
+    background: #fff;
+}
+.channel-editor .channel-editor-footer .video-muted { font-size: 12px; }
+
+@media (max-width: 1100px) {
+    .recognition .video-live { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 820px) {
+    .recognition .video-channel-table, .recognition .video-channel-table tbody { display: block; }
+    .recognition .video-channel-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .recognition .video-channel-table tbody tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 6px 8px;
+        border: 1px solid #dce6ef;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 8px;
+    }
+    .recognition .video-channel-table th, .recognition .video-channel-table td { padding: 0; border: 0; }
+    .recognition .video-channel-state { grid-area: 1 / 2; }
+    .recognition .video-channel-source, .recognition .video-channel-models, .recognition .video-channel-actions { grid-column: 1 / -1; }
+    .recognition .video-channel-actions .el-button { min-height: 34px; padding-inline: 6px; }
+}
+@media (max-width: 620px) {
+    .recognition .video-channel-picker { width: 100%; }
+    .recognition .video-channel-picker label { font-size: 13px; }
+    .recognition .video-channel-picker .el-select { width: auto; flex: 1; min-width: 0; }
+    .recognition .video-channel-filter .el-input { width: 100%; }
+    .channel-settings-dialog .el-dialog__body { padding-inline: 12px; }
+}

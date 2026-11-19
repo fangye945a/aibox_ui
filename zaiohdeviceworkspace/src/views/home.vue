@@ -796,8 +796,17 @@ onUnmounted(() => {
     justify-content: space-between;
   }
  
+  .home-top-box,
+  .home-center-box-left,
+  .home-center-box-right,
+  .home-center-box-center-top,
+  .home-center-box-center-bottom,
+  .home-bottom-box-left,
+  .home-bottom-box-right {
+    box-shadow: inset 0 0 0 1px #e1e7ed;
+  }
   .home-top-box{
-    margin-bottom:20px ;
+    margin-bottom: 16px;
     display: flex;
     justify-content: space-between;
     height: 120px;
@@ -843,8 +852,8 @@ onUnmounted(() => {
   }
   .home-center-box{
     display: flex;
-    gap: 10px; 
-    margin-bottom: 20px;
+    gap: 12px;
+    margin-bottom: 16px;
   }
   .home-center-box-left{
     display: flex; justify-content: space-between;flex-direction: column;position: relative; overflow: hidden;
@@ -858,7 +867,7 @@ onUnmounted(() => {
   .memory-bg-image {
     width: 100%;
     height: 100%;
-    // opacity: 0.8;
+    opacity: 0.55;
   }
   }
   .centerflex{
@@ -940,10 +949,10 @@ onUnmounted(() => {
     background-color: #F56C6C; 
   }
   .connected-font{
-    color: #67C23A;
+    color: #28613e;
   }
   .disconnected-font{
-    color: #F56C6C;
+    color: #9f3535;
   }
   .home-bottom-box{
     display: flex;

@@ -14,7 +14,8 @@
         <el-form class="video-form" label-position="top" @submit.prevent="Save">
             <div class="video-columns">
                 <section class="video-panel">
-                    <h3>视频源</h3>
+                    <h3>通道与视频源</h3>
+                    <el-form-item label="通道名称"><el-input v-model.trim="name" aria-label="通道名称" maxlength="80" required /></el-form-item>
                     <el-form-item label="视频源类型">
                         <el-select v-model="draft.type" aria-label="视频源类型">
                             <el-option label="示例或本地 MP4" value="mp4" />
@@ -30,7 +31,8 @@
                         </el-form-item>
                         <el-checkbox v-if="draft.sourceId !== 'sample'" v-model="draft.loop">循环播放 MP4</el-checkbox>
                         <div class="video-actions">
-                            <input ref="fileInput" type="file" accept=".mp4,video/mp4" aria-label="添加本地 MP4" @change="AddFile" />
+                            <el-button :icon="Upload" @click="fileInput.click()">添加本地 MP4</el-button>
+                            <input ref="fileInput" type="file" hidden accept=".mp4,video/mp4" aria-label="添加本地 MP4" @change="AddFile" />
                         </div>
                         <el-table v-if="workspace.sources.length > 1" :data="uploaded" size="small">
                             <el-table-column label="本地视频" prop="name" min-width="100" />
@@ -90,17 +92,19 @@
                                 <el-checkbox v-for="model in compatible" :key="model.id" :value="model.id">{{ model.name }}</el-checkbox>
                             </el-checkbox-group>
                         </el-form-item>
-                        <fieldset v-for="model in selectedModels" :key="model.id" class="video-algorithm-fields">
-                            <legend>{{ model.name }}</legend>
-                            <el-form-item :label="model.kind === 'face' ? '相似度阈值' : '置信度阈值'">
-                                <el-slider v-model="parameters[model.id].confidence" :aria-label="`${model.name}阈值`"
-                                    :min="0.01" :max="1" :step="0.01" show-input :show-input-controls="false" />
-                            </el-form-item>
-                            <el-form-item v-if="model.kind === 'person'" label="NMS IoU 阈值">
-                                <el-slider v-model="parameters[model.id].nmsIou" :aria-label="`${model.name} NMS IoU 阈值`"
-                                    :min="0.01" :max="1" :step="0.01" show-input :show-input-controls="false" />
-                            </el-form-item>
-                        </fieldset>
+                        <details v-for="model in selectedModels" :key="model.id" class="video-algorithm-fields">
+                            <summary>{{ model.name }}参数</summary>
+                            <div class="video-algorithm-inputs">
+                                <el-form-item :label="model.kind === 'face' ? '相似度阈值' : '置信度阈值'">
+                                    <el-slider v-model="parameters[model.id].confidence" :aria-label="`${model.name}阈值`"
+                                        :min="0.01" :max="1" :step="0.01" show-input :show-input-controls="false" />
+                                </el-form-item>
+                                <el-form-item v-if="model.kind === 'person'" label="NMS IoU 阈值">
+                                    <el-slider v-model="parameters[model.id].nmsIou" :aria-label="`${model.name} NMS IoU 阈值`"
+                                        :min="0.01" :max="1" :step="0.01" show-input :show-input-controls="false" />
+                                </el-form-item>
+                            </div>
+                        </details>
                         <p v-if="selectedModels.some(model => model.kind === 'face')" class="video-muted">人脸比对使用模拟相似度。</p>
                     </template>
                     <template v-if="algorithm.mode === 'motion'">
@@ -114,12 +118,11 @@
                     </template>
                     <el-checkbox v-if="algorithm.mode !== 'none'" v-model="algorithm.showBox">显示检测框</el-checkbox>
                     <h3 class="video-divider">运行设置</h3>
-                    <el-form-item label="通道名称"><el-input v-model.trim="name" aria-label="通道名称" maxlength="80" required /></el-form-item>
                     <el-checkbox v-model="autostart" :disabled="IsBrowserSource(draft)">模拟 AIBox 启动时自动检测</el-checkbox>
                     <p v-if="IsBrowserSource(draft)" class="video-muted">本地画面由浏览器播放，算法模型显示模拟分数。</p>
                 </section>
             </div>
-            <div class="video-actions video-divider">
+            <div class="video-actions channel-editor-footer">
                 <el-button type="primary" native-type="submit" :disabled="(!creating && !changed) || busy">保存通道配置</el-button>
                 <el-button @click="$emit('cancel')">取消</el-button>
                 <span v-if="running && taskChanged" class="video-muted">
@@ -132,7 +135,7 @@
 
 <script setup>
 import { computed, reactive, ref, shallowRef, watch } from 'vue';
-import { Refresh } from '@element-plus/icons-vue';
+import { Refresh, Upload } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { DateText } from '@/demo/video-recognition';
 import {

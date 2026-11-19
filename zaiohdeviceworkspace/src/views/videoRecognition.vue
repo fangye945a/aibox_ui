@@ -17,52 +17,57 @@
                 <h1>实时检测</h1>
                 <el-tag type="info" effect="plain">Mock 演示</el-tag>
             </header>
-            <dl class="video-summary">
-                <div><dt>总处理速率（模拟）</dt><dd>{{ totalFps }} FPS</dd></div>
-                <div><dt>选中画面检测数</dt><dd>{{ frame?.detections.length ?? '—' }}</dd></div>
-                <div><dt>选中画面推理耗时</dt><dd>{{ Timed('inference') }}</dd></div>
-            </dl>
-            <div v-if="workspace.channels.length" class="video-heading video-channel-picker">
-                <label for="live-channel">视频通道</label>
-                <el-select id="live-channel" :model-value="selected?.id" aria-label="视频通道" @change="Open('live', $event)">
-                    <el-option v-for="channel in workspace.channels" :key="channel.id" :label="channel.name" :value="channel.id" />
-                </el-select>
+            <div v-if="selected" class="video-live-toolbar">
+                <div class="video-channel-picker">
+                    <label for="live-channel">视频通道</label>
+                    <el-select id="live-channel" :model-value="selected.id" aria-label="视频通道" filterable @change="Open('live', $event)">
+                        <el-option v-for="channel in workspace.channels" :key="channel.id" :label="channel.name" :value="channel.id" />
+                    </el-select>
+                </div>
+                <div class="video-live-meta">
+                    <el-tag :type="VideoStatusType(selected)" effect="light">{{ VideoChannelStatus(selected) }}</el-tag>
+                    <span>分析帧率 <strong>{{ analysisFps }} FPS</strong></span>
+                </div>
             </div>
             <div class="video-live">
-                <VideoChannel v-if="selected" :key="selected.id" :channel="selected" :workspace="workspace" selected
+                <VideoChannel v-if="selected" :key="selected.id" :channel="selected" :workspace="workspace"
                     @local-frame="localFrame = $event" @pause-preview="paused = $event"
                     @configure="Open('settings', selected.id)" @records="Open('records', selected.id)" @diagnose="Open('diagnostics', selected.id)" />
                 <section v-else class="video-panel" aria-label="未配置通道">
                     <div class="video-picture"><div class="video-placeholder">暂无通道</div></div>
                     <el-button link type="primary" @click="Open('settings')">配置通道</el-button>
                 </section>
-                <aside class="video-panel" aria-label="选中画面分析">
-                    <div class="video-heading"><h2>{{ selected?.name || '画面详情' }}</h2><el-tag size="small">帧 #{{ frame?.sequence ?? '—' }}</el-tag></div>
-                    <h3>当前帧目标分布</h3>
-                    <div v-for="row in distribution" :key="row.kind" class="video-bar">
-                        <span>{{ DetectionLabel(row.kind) }}</span>
-                        <el-progress :percentage="row.count * 100 / frame.detections.length" :show-text="false" />
-                        <strong>{{ row.count }}</strong>
+                <aside v-if="selected" class="video-panel video-results" aria-label="选中画面分析">
+                    <div class="video-heading">
+                        <h2>检测结果</h2>
+                        <span v-if="frame" class="video-result-count">{{ frame.detections.length }} 个结果 · 帧 #{{ frame.sequence }}</span>
                     </div>
-                    <p v-if="!distribution.length" class="video-muted">{{ frameHint }}</p>
-                    <div v-for="result in frame?.modelResults || []" :key="result.id" class="video-model-result">
-                        <h3>{{ result.name }}</h3>
-                        <div v-if="result.detections.length" class="video-tags">
-                            <el-tag v-for="(item, index) in result.detections" :key="index" size="small" type="info">{{ DetectionText(item) }}</el-tag>
+                    <p v-if="!frame" class="video-muted">{{ frameHint }}</p>
+                    <section v-for="model in modelResults" :key="model.id" class="video-model-result">
+                        <div class="video-heading">
+                            <h3>{{ model.name }}</h3>
+                            <span class="video-result-count">{{ frame ? `${model.detections.length} 项` : '已启用' }}</span>
                         </div>
-                        <p v-else class="video-muted">无符合阈值的结果</p>
-                    </div>
-                    <dl class="video-fields">
-                        <dt>算法模型</dt><dd>{{ modelNames || '—' }}</dd>
-                        <dt>源时间戳</dt><dd>{{ frame ? `${frame.elapsed} ms` : '—' }}</dd>
-                        <dt>输入规格</dt><dd>{{ frame ? `${frame.inputWidth} × ${frame.inputHeight}` : '—' }}</dd>
-                        <template v-if="selected?.algorithm.mode === 'motion'"><dt>变化面积</dt><dd>{{ frame?.motion?.toFixed(1) ?? '—' }} %</dd></template>
-                        <template v-else>
-                            <dt>解码 / 预处理</dt><dd>{{ Timed('decode') }} / {{ Timed('preprocess') }}</dd>
-                            <dt>后处理 / JPEG</dt><dd>{{ Timed('postprocess') }} / {{ Timed('jpeg') }}</dd>
-                            <dt>管线耗时</dt><dd>{{ Timed('pipeline') }}</dd>
-                        </template>
-                    </dl>
+                        <div v-if="model.detections.length" class="video-tags">
+                            <el-tag v-for="(item, index) in model.detections" :key="index" size="small" effect="plain">{{ DetectionText(item) }}</el-tag>
+                        </div>
+                        <p v-else-if="frame" class="video-muted">无符合阈值的结果</p>
+                    </section>
+                    <p v-if="frame && selected.algorithm.mode === 'motion'">画面变化 {{ frame.motion?.toFixed(1) ?? '—' }}%</p>
+                    <p v-if="frame && selected.algorithm.mode === 'none'" class="video-muted">当前通道仅预览</p>
+                    <details class="video-runtime-details">
+                        <summary>运行详情</summary>
+                        <dl class="video-fields">
+                            <dt>源时间戳</dt><dd>{{ frame ? `${frame.elapsed} ms` : '—' }}</dd>
+                            <dt>输入规格</dt><dd>{{ frame ? `${frame.inputWidth} × ${frame.inputHeight}` : '—' }}</dd>
+                            <template v-if="selected.algorithm.mode === 'model'">
+                                <dt>推理</dt><dd>{{ Timed('inference') }}</dd>
+                                <dt>解码 / 预处理</dt><dd>{{ Timed('decode') }} / {{ Timed('preprocess') }}</dd>
+                                <dt>后处理 / JPEG</dt><dd>{{ Timed('postprocess') }} / {{ Timed('jpeg') }}</dd>
+                                <dt>管线耗时</dt><dd>{{ Timed('pipeline') }}</dd>
+                            </template>
+                        </dl>
+                    </details>
                 </aside>
             </div>
         </template>
@@ -93,8 +98,8 @@ import VideoRecords from '@/components/video/VideoRecords.vue';
 import VideoConfiguration from '@/components/video/VideoConfiguration.vue';
 import VideoChannelList from '@/components/video/VideoChannelList.vue';
 import VideoPerformance from '@/components/video/VideoPerformance.vue';
-import { DetectionLabel, DetectionText } from '@/demo/video-recognition';
-import { ChannelModels, IsBrowserSource, VIDEO_WORKSPACE } from '@/demo/video-workspace';
+import { DetectionText } from '@/demo/video-recognition';
+import { ChannelModels, IsBrowserSource, VIDEO_WORKSPACE, VideoChannelStatus, VideoStatusType } from '@/demo/video-workspace';
 
 const route = useRoute();
 const router = useRouter();
@@ -110,20 +115,18 @@ const frame = computed(() => {
     }
     return IsBrowserSource(selected.value.source) ? localFrame.value : selected.value.frame;
 });
-const frameHint = computed(() => {
-    if (paused.value) {
-        return '选中通道的预览已暂停';
+const frameHint = computed(() => paused.value ? '预览已暂停' : '等待分析画面');
+const analysisFps = computed(() => {
+    if (!selected.value || selected.value.algorithm.mode === 'none') {
+        return 0;
     }
-    return frame.value ? '当前帧无检测目标' : '暂无检测帧';
+    return IsBrowserSource(selected.value.source) ? localFrame.value?.fps ?? 0 : selected.value.fps;
 });
-const totalFps = computed(() => workspace.channels.reduce((sum, channel) => sum + (channel.frame?.timings ? channel.fps : 0), 0));
-const modelNames = computed(() => selected.value ? ChannelModels(workspace, selected.value).map(model => model.name).join('、') : '');
-const distribution = computed(() => {
-    const counts = new Map();
-    for (const item of frame.value?.detections ?? []) {
-        counts.set(item.kind, (counts.get(item.kind) ?? 0) + 1);
+const modelResults = computed(() => {
+    if (!selected.value) {
+        return [];
     }
-    return Array.from(counts, ([kind, count]) => ({ kind, count }));
+    return frame.value?.modelResults ?? ChannelModels(workspace, selected.value).map(model => ({ ...model, detections: [] }));
 });
 
 function Open(view, channel) {
