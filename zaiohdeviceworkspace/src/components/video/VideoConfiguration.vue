@@ -10,192 +10,157 @@
  limitations under the License.
 -->
 <template>
-    <div>
-        <section class="video-section" aria-label="模型资产">
-            <div class="video-heading">
-                <h2>模型资产</h2>
-                <el-button :icon="Refresh" @click="RefreshAssets">刷新模型资产</el-button>
+    <section class="video-section" aria-label="算法模型资产">
+        <div class="video-heading">
+            <h2>设备算法模型</h2>
+            <div class="video-actions">
+                <el-button :icon="Upload" :disabled="busy" @click="fileInput.click()">本地上传</el-button>
+                <el-button type="primary" :icon="Download" @click="cloudOpen = true">云平台下载</el-button>
+                <input ref="fileInput" type="file" hidden accept=".zip,application/zip" aria-label="上传算法模型 ZIP" @change="UploadPackage" />
             </div>
-            <el-form-item label="演示模型类型">
-                <el-select v-model="target" aria-label="演示模型类型" :disabled="busy">
-                    <el-option v-for="channel in workspace.channels" :key="channel.id" :label="channel.name" :value="channel.id" />
-                </el-select>
-            </el-form-item>
-            <div class="video-columns">
-                <article v-for="model in workspace.models" :key="model.id" class="video-panel" :aria-label="model.name">
-                    <div class="video-heading"><h3>{{ model.name }}</h3><el-tag type="info" size="small">{{ model.status }}</el-tag></div>
-                    <p class="video-muted">{{ model.kind }} · {{ model.target }}</p>
-                    <div class="video-tags"><el-tag v-for="label in model.labels" :key="label" size="small">{{ DetectionLabel(label) }}</el-tag></div>
-                    <dl class="video-fields">
-                        <dt>模型 ID</dt><dd>{{ model.id }}</dd>
-                        <dt>SHA-256</dt><dd>{{ model.sha256 ?? '—（模拟基线）' }}</dd>
-                        <dt>已绑定通道</dt><dd>{{ ActiveChannels(model.id) }}</dd>
-                    </dl>
-                    <el-button v-if="model.status === '已暂存'" size="small" :disabled="busy" @click="ValidateModel(model)">验证模型</el-button>
-                    <el-button v-else size="small" :disabled="model.target !== 'rk3588'" @click="$emit('configure', ModelChannel(model).id)">去通道配置绑定</el-button>
-                </article>
-            </div>
-        </section>
-        <section class="video-section video-divider" aria-label="上传 RKNN 模型">
-            <div class="video-heading"><h2>上传 RKNN 模型</h2><el-button :disabled="busy" @click="FillExample">填入演示模型</el-button></div>
-            <el-form label-position="top" :disabled="busy" @submit.prevent="StageModel">
-                <div class="video-columns">
-                    <el-form-item label="导入 manifest JSON 文件" for="video-manifest-file">
-                        <input id="video-manifest-file" ref="manifestInput" type="file" accept=".json,application/json" :disabled="busy" @change="LoadManifest" />
-                    </el-form-item>
-                    <el-form-item label="RKNN 文件" for="video-model-file">
-                        <input id="video-model-file" ref="modelInput" type="file" accept=".rknn" :disabled="busy" @change="modelFile = $event.target.files[0]" />
-                        <span v-if="modelFile" class="video-muted">{{ modelFile.name }}</span>
-                    </el-form-item>
+        </div>
+        <div class="video-model-grid">
+            <article v-for="model in workspace.models" :key="model.id" class="video-panel video-model-card" :aria-label="model.name">
+                <button type="button" class="video-model-summary" @click="Show(model)">
+                    <el-icon :size="21"><Box /></el-icon>
+                    <span><strong>{{ model.name }}</strong><small>{{ model.target.toUpperCase() }} · v{{ model.version || '1.0.0' }}</small></span>
+                    <el-icon><ArrowRight /></el-icon>
+                </button>
+                <div class="video-tags">
+                    <el-tag effect="plain" size="small">{{ model.origin || '内置' }}</el-tag>
+                    <el-tag v-for="label in model.labels" :key="label" type="info" size="small">{{ DetectionLabel(label) }}</el-tag>
                 </div>
-                <el-form-item label="模型 manifest">
-                    <el-input v-model="manifest" aria-label="模型 manifest" type="textarea" :rows="6" maxlength="65536"
-                        placeholder="name、kind、target、sha256、contract" />
-                </el-form-item>
-                <el-button type="primary" native-type="submit" :loading="busy">上传并暂存</el-button>
-            </el-form>
-        </section>
-    </div>
+                <div class="video-actions"><el-button link type="primary" @click="Export(model)">导出 ZIP</el-button></div>
+            </article>
+        </div>
+        <el-dialog v-model="cloudOpen" title="云平台算法模型" width="min(750px, 94vw)" append-to-body>
+            <div class="recognition video-dialog">
+                <p class="video-muted">模拟云目录 · RK3588</p>
+                <div class="video-model-grid">
+                    <article v-for="model in g_cloudModels" :key="model.id" class="video-panel video-model-card" :aria-label="model.name">
+                        <button type="button" class="video-model-summary" @click="Show(model, true)">
+                            <el-icon :size="21"><Box /></el-icon>
+                            <span><strong>{{ model.name }}</strong><small>{{ model.target.toUpperCase() }} · v{{ model.version }}</small></span>
+                            <el-icon><ArrowRight /></el-icon>
+                        </button>
+                        <div class="video-actions">
+                            <el-button size="small" :disabled="busy || Installed(model)" @click="InstallCloud(model)">
+                                {{ Installed(model) ? '已下载' : '下载到设备' }}
+                            </el-button>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </el-dialog>
+        <el-dialog v-model="detailOpen" title="算法模型详情" width="min(560px, 94vw)" append-to-body>
+            <div v-if="detail" class="recognition video-dialog">
+                <h2>{{ detail.name }}</h2>
+                <p v-if="detail.description" class="video-muted">{{ detail.description }}</p>
+                <dl class="video-fields">
+                    <dt>版本</dt><dd>{{ detail.version || '1.0.0' }}</dd>
+                    <dt>设备平台</dt><dd>{{ detail.target.toUpperCase() }}</dd>
+                    <dt>识别类别</dt><dd>{{ detail.labels.map(DetectionLabel).join('、') }}</dd>
+                    <dt>可配参数</dt><dd>{{ detail.kind === 'person' ? '置信度、NMS IoU' : '置信度' }}</dd>
+                    <dt>模型包</dt><dd>{{ detail.demo || detail.status === '内置基线' ? '演示 ZIP' : '算法模型 ZIP' }}</dd>
+                    <template v-if="detail.size"><dt>大小</dt><dd>{{ Math.ceil(detail.size / 1024) }} KiB</dd></template>
+                    <template v-if="detail.sha256"><dt>SHA-256</dt><dd>{{ detail.sha256 }}</dd></template>
+                    <template v-if="!fromCloud"><dt>已绑定通道</dt><dd>{{ BoundChannels(detail.id) }}</dd></template>
+                </dl>
+            </div>
+            <template #footer>
+                <el-button v-if="fromCloud && detail" type="primary" :loading="busy" :disabled="Installed(detail)" @click="InstallCloud(detail)">
+                    {{ Installed(detail) ? '已下载' : '下载到设备' }}
+                </el-button>
+                <el-button v-else-if="detail" type="primary" @click="Export(detail)">导出 ZIP</el-button>
+            </template>
+        </el-dialog>
+    </section>
 </template>
 
 <script setup>
-import { computed, ref, shallowRef } from 'vue';
-import { Refresh } from '@element-plus/icons-vue';
+import { ref, shallowRef } from 'vue';
+import { ArrowRight, Box, Download, Upload } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import { DetectionLabel, ModelDetections } from '@/demo/video-recognition';
-import { ModelLabels, SaveVideoWorkspace } from '@/demo/video-workspace';
+import { DetectionLabel, DownloadBlob } from '@/demo/video-recognition';
+import { g_cloudModels, LoadModelPackage, MakeDemoModelPackage, ParseModelPackage, StoreModelPackage } from '@/demo/model-packages';
+import { SaveVideoWorkspace } from '@/demo/video-workspace';
 
-const FILE_LIMIT = 64 * 1024 * 1024;
-const MANIFEST_LIMIT = 64 * 1024;
-const props = defineProps({ workspace: Object, initialChannel: String });
-defineEmits(['configure']);
-const target = ref(props.initialChannel || 'person');
-const selected = computed(() => props.workspace.channels.find(channel => channel.id === target.value));
+const props = defineProps({ workspace: Object });
+const fileInput = ref(null);
 const busy = ref(false);
-const manifest = ref('');
-const modelFile = shallowRef(null);
-const manifestInput = ref(null);
-const modelInput = ref(null);
-function ActiveChannels(id) {
-    return props.workspace.channels.filter(channel => channel.modelId === id).map(channel => channel.name).join('、') || '未绑定';
+const cloudOpen = ref(false);
+const detailOpen = ref(false);
+const fromCloud = ref(false);
+const detail = shallowRef(null);
+
+function Show(model, cloud = false) {
+    detail.value = model;
+    fromCloud.value = cloud;
+    detailOpen.value = true;
 }
 
-function ModelChannel(model) {
-    return props.workspace.channels.find(channel => channel.kind === model.kind);
+function Installed(model) {
+    return props.workspace.models.some(item => item.catalogId === model.id);
 }
 
-function RefreshAssets() {
-    ElMessage.success(`模型资产已刷新，共 ${props.workspace.models.length} 项`);
+function BoundChannels(id) {
+    return props.workspace.channels.filter(item => item.modelId === id && item.algorithm.mode === 'model').map(item => item.name).join('、') || '未绑定';
 }
 
-async function FileHash(file) {
-    const hash = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
-    return Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('');
-}
-
-function ExpectedContract(kind) {
-    const labels = ModelLabels(kind);
-    const safety = kind === 'yolo26n';
-    return {
-        caller_input: { shape: [1, 640, 640, 3], dtype: 'uint8', layout: 'NHWC' },
-        preprocess: { color: 'RGB', pad: 114, divisor: 1, resize: 'letterbox' }, labels,
-        postprocess: safety ? { layout: 'decoded_xyxy_scores_host_topk', sigmoid: false, nms: false } : { layout: 'split_xywh_score_1x4x8400_1x1x8400' },
-        caller_outputs: [
-            { name: 'boxes', shape: [1, 4, 8400], dtype: 'float32', layout: 'ND' },
-            { name: 'scores', shape: [1, labels.length, 8400], dtype: 'float32', layout: 'ND' }
-        ]
-    };
-}
-
-function MatchesFields(input, expected) {
-    return input && Object.entries(expected).every(([key, value]) => Array.isArray(value) ?
-        Array.isArray(input[key]) && input[key].length === value.length && value.every((entry, index) => input[key][index] === entry) : input[key] === value);
-}
-
-function ValidContract(contract, kind) {
-    const { caller_input: input, preprocess, postprocess, labels, caller_outputs: outputs } = ExpectedContract(kind);
-    const outputsMatch = Array.isArray(contract?.caller_outputs) && contract.caller_outputs.length === outputs.length &&
-        outputs.every(({ shape, dtype }, index) => {
-            const actual = contract.caller_outputs[index];
-            return MatchesFields(actual, { shape, dtype }) && ['ND', 'NCHW'].includes(actual.layout) &&
-                typeof actual.name === 'string' && actual.name.length > 0 && actual.name.length < 256;
-        });
-    return outputsMatch && MatchesFields(contract, { labels }) && MatchesFields(contract.caller_input, input) &&
-        MatchesFields(contract.preprocess, preprocess) && MatchesFields(contract.postprocess, postprocess);
-}
-
-async function LoadManifest(event) {
-    const file = event.target.files[0];
-    if (!file || file.size > MANIFEST_LIMIT) {
-        ElMessage.warning('请选择 64 KiB 以内的 manifest JSON 文件');
-        return;
-    }
-    manifest.value = await file.text();
-}
-
-async function FillExample() {
-    const channel = selected.value;
-    const name = channel.kind === 'person' ? 'Person 演示模型' : 'YOLO26n 演示模型';
-    const file = new File([`TraceIQ Mock: ${channel.kind}`], `${channel.kind}-demo.rknn`);
-    busy.value = true;
-    try {
-        const hash = await FileHash(file);
-        modelFile.value = file;
-        manifestInput.value.value = '';
-        modelInput.value.value = '';
-        manifest.value = JSON.stringify({ name, kind: channel.kind, target: 'rk3588', sha256: hash, contract: ExpectedContract(channel.kind) }, null, 2);
-    } catch {
-        ElMessage.error('无法生成演示模型');
-    } finally {
-        busy.value = false;
-    }
-}
-
-async function StageModel() {
-    const file = modelFile.value;
-    if (!file || !/\.rknn$/i.test(file.name) || !file.size || file.size > FILE_LIMIT) {
-        ElMessage.warning('请选择不超过 64 MiB 的非空 RKNN 文件');
+async function Install(blob, origin, catalogId) {
+    if (busy.value) {
         return;
     }
     busy.value = true;
     try {
-        const parsed = JSON.parse(manifest.value);
-        if (typeof parsed?.name !== 'string' || !parsed.name.trim() || parsed.name.length > 80 || !['person', 'yolo26n'].includes(parsed.kind) ||
-            !/^[a-z0-9_-]{2,32}$/.test(parsed.target ?? '') || !/^[a-f0-9]{64}$/i.test(parsed.sha256 ?? '') || !ValidContract(parsed.contract, parsed.kind)) {
-            throw new Error('manifest 字段或模型契约不匹配');
+        const model = await ParseModelPackage(blob, origin);
+        if (props.workspace.models.some(item => item.id === model.id)) {
+            ElMessage.info('设备已安装此算法模型');
+            return;
         }
-        const hash = await FileHash(file);
-        if (hash !== parsed.sha256.toLowerCase()) {
-            throw new Error('文件 SHA-256 与 manifest 不一致');
+        await StoreModelPackage(model.id, blob);
+        props.workspace.models.push({ ...model, catalogId });
+        try {
+            SaveVideoWorkspace(props.workspace);
+        } catch (error) {
+            props.workspace.models.pop();
+            throw error;
         }
-        if (props.workspace.models.some(model => model.sha256 === hash)) {
-            throw new Error('该模型已存在');
+        detailOpen.value = false;
+        if (catalogId) {
+            cloudOpen.value = false;
         }
-        props.workspace.models.push({ id: `${parsed.kind}-${hash.slice(0, 16)}`, name: parsed.name.trim(), kind: parsed.kind, target: parsed.target,
-            sha256: hash, labels: ModelLabels(parsed.kind), status: '已暂存' });
-        SaveVideoWorkspace(props.workspace);
-        modelFile.value = null;
-        modelInput.value.value = '';
-        ElMessage.success('模型已暂存，等待模拟首帧验证');
+        ElMessage.success('算法模型已添加到设备');
     } catch (error) {
-        ElMessage.error(error instanceof SyntaxError ? 'manifest 不是有效 JSON' : error.message);
+        ElMessage.error(error.message || '无法导入算法模型');
     } finally {
         busy.value = false;
     }
 }
 
-function ValidateModel(model) {
-    if (model.target !== 'rk3588') {
-        ElMessage.warning('该模型目标与模拟设备 RK3588 不兼容');
-        return;
+function UploadPackage(event) {
+    const file = event.target.files[0];
+    event.target.value = '';
+    if (file) {
+        Install(file, '本地上传');
     }
-    const testFrame = ModelDetections(0, { channelId: ModelChannel(model).id, confidence: 0.01, nmsIou: 0.45 });
-    if (!testFrame.length || testFrame.some(item => !model.labels.includes(item.kind))) {
-        ElMessage.error('模拟首帧不符合模型类别契约');
-        return;
+}
+
+function InstallCloud(model) {
+    Install(MakeDemoModelPackage(model), '云平台', model.id);
+}
+
+async function Export(model) {
+    try {
+        const blob = model.status === '内置基线' ? MakeDemoModelPackage(model) : await LoadModelPackage(model.id);
+        if (!blob) {
+            ElMessage.warning('该模型来自旧版演示，请重新上传原始模型包后导出');
+            return;
+        }
+        const filename = model.name.replace(/[\\/:*?"<>|]/g, '_');
+        DownloadBlob(blob, `${filename}-${model.version || '1.0.0'}.zip`);
+    } catch (error) {
+        ElMessage.error(error.message || '无法导出算法模型');
     }
-    model.status = '已验证';
-    SaveVideoWorkspace(props.workspace);
-    ElMessage.success('模拟首帧验证通过，可在通道配置中绑定');
 }
 </script>

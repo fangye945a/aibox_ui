@@ -23,15 +23,29 @@
                         <div><dt>选中画面检测数</dt><dd>{{ frame?.detections.length ?? '—' }}</dd></div>
                         <div><dt>选中画面推理耗时</dt><dd>{{ Timed('inference') }}</dd></div>
                     </dl>
+                    <div class="video-heading video-layout-toolbar">
+                        <el-radio-group v-model="layout" aria-label="画面布局">
+                            <el-radio-button :value="1">单通道</el-radio-button>
+                            <el-radio-button :value="2">双通道</el-radio-button>
+                            <el-radio-button :value="4">四通道</el-radio-button>
+                        </el-radio-group>
+                        <el-select v-if="layout < workspace.channels.length" v-model="pageIndex" aria-label="画面分组">
+                            <el-option v-for="index in pageCount" :key="index" :label="GroupLabel(index - 1)" :value="index - 1" />
+                        </el-select>
+                    </div>
                     <div class="video-live">
-                        <div class="video-columns">
-                            <VideoChannel v-for="channel in workspace.channels" :key="channel.id" :channel="channel" :workspace="workspace"
+                        <div class="video-grid" :class="`video-grid-${layout}`">
+                            <VideoChannel v-for="channel in visibleChannels" :key="channel.id" :channel="channel" :workspace="workspace"
                                 :selected="channel.id === selectedId" @select="selectedId = channel.id" @local-frame="UpdateLocal(channel.id, $event)"
                                 @pause-preview="pausedPreviews[channel.id] = $event"
-                                @configure="Open('settings', channel.id)" @records="Open('records', channel.id)" @diagnose="Diagnose(channel.id)" />
+                                @configure="Open('settings', channel.id)" @records="Open('records', channel.id)" @diagnose="Open('diagnostics', channel.id)" />
+                            <section v-for="index in emptySlots" :key="`empty-${index}`" class="video-panel" aria-label="未配置通道">
+                                <div class="video-picture"><div class="video-placeholder">未配置</div></div>
+                                <el-button link type="primary" @click="Open('settings')">配置通道</el-button>
+                            </section>
                         </div>
                         <aside class="video-panel" aria-label="选中画面分析">
-                            <div class="video-heading"><h2>{{ selected.name }}</h2><el-tag size="small">帧 #{{ frame?.sequence ?? '—' }}</el-tag></div>
+                            <div class="video-heading"><h2>{{ selected?.name || '画面详情' }}</h2><el-tag size="small">帧 #{{ frame?.sequence ?? '—' }}</el-tag></div>
                             <h3>当前帧目标分布</h3>
                             <div v-for="row in distribution" :key="row.kind" class="video-bar">
                                 <span>{{ DetectionLabel(row.kind) }}</span>
@@ -48,7 +62,7 @@
                                 <dt>模型</dt><dd>{{ frame?.modelId ?? '—' }}</dd>
                                 <dt>源时间戳</dt><dd>{{ frame ? `${frame.elapsed} ms` : '—' }}</dd>
                                 <dt>输入规格</dt><dd>{{ frame ? `${frame.inputWidth} × ${frame.inputHeight}` : '—' }}</dd>
-                                <template v-if="selected.algorithm.mode === 'motion'"><dt>变化面积</dt><dd>{{ frame?.motion?.toFixed(1) ?? '—' }} %</dd></template>
+                                <template v-if="selected?.algorithm.mode === 'motion'"><dt>变化面积</dt><dd>{{ frame?.motion?.toFixed(1) ?? '—' }} %</dd></template>
                                 <template v-else>
                                     <dt>解码 / 预处理</dt><dd>{{ Timed('decode') }} / {{ Timed('preprocess') }}</dd>
                                     <dt>后处理 / JPEG</dt><dd>{{ Timed('postprocess') }} / {{ Timed('jpeg') }}</dd>
@@ -63,17 +77,20 @@
                 <VideoRecords v-if="tab === 'records'" :workspace="workspace" :initial-channel="routeChannel" />
             </el-tab-pane>
             <el-tab-pane label="通道配置" name="settings">
-                <template v-if="tab === 'settings'">
-                    <el-radio-group :model-value="configChannel.id" aria-label="选择通道" @change="Open('settings', $event)">
-                        <el-radio-button v-for="channel in workspace.channels" :key="channel.id" :value="channel.id">{{ channel.name }}</el-radio-button>
-                    </el-radio-group>
-                    <VideoChannelSettings :key="configChannel.id" :workspace="workspace" :channel="configChannel" @show-live="Open('live', configChannel.id)"
-                        @manage-models="Open('models', configChannel.id)" />
-                </template>
+                <VideoChannelList v-if="tab === 'settings'" :workspace="workspace" :initial-channel="routeChannel"
+                    @show-live="Open('live', $event)" />
             </el-tab-pane>
             <el-tab-pane label="模型管理" name="models">
-                <VideoConfiguration v-if="tab === 'models'" :workspace="workspace" :initial-channel="routeChannel"
-                    @configure="Open('settings', $event)" />
+                <VideoConfiguration v-if="tab === 'models'" :workspace="workspace" />
+            </el-tab-pane>
+            <el-tab-pane label="视频诊断" name="diagnostics">
+                <template v-if="tab === 'diagnostics'">
+                    <el-radio-group :model-value="routeChannel" aria-label="诊断通道" @change="Open('diagnostics', $event)">
+                        <el-radio-button value="">全部通道</el-radio-button>
+                        <el-radio-button v-for="item in workspace.channels" :key="item.id" :value="item.id">{{ item.name }}</el-radio-button>
+                    </el-radio-group>
+                    <VideoPerformance :workspace="workspace" :channel-id="routeChannel" @show-live="Open('live', $event)" />
+                </template>
             </el-tab-pane>
         </el-tabs>
     </section>
@@ -85,7 +102,8 @@ import { useRoute, useRouter } from 'vue-router';
 import VideoChannel from '@/components/video/VideoChannel.vue';
 import VideoRecords from '@/components/video/VideoRecords.vue';
 import VideoConfiguration from '@/components/video/VideoConfiguration.vue';
-import VideoChannelSettings from '@/components/video/VideoChannelSettings.vue';
+import VideoChannelList from '@/components/video/VideoChannelList.vue';
+import VideoPerformance from '@/components/video/VideoPerformance.vue';
 import { DetectionLabel } from '@/demo/video-recognition';
 import { IsBrowserSource, VIDEO_WORKSPACE } from '@/demo/video-workspace';
 
@@ -94,15 +112,30 @@ const router = useRouter();
 const workspace = inject(VIDEO_WORKSPACE);
 const routeChannel = computed(() => workspace.channels.some(channel => channel.id === route.query.channel) ? route.query.channel : '');
 const tab = computed({
-    get: () => ['records', 'settings', 'models'].includes(route.query.view) ? route.query.view : 'live',
-    set: next => Open(next, next === 'settings' || next === 'models' ? selectedId.value : '')
+    get: () => ['records', 'settings', 'models', 'diagnostics'].includes(route.query.view) ? route.query.view : 'live',
+    set: next => Open(next)
 });
-const selectedId = ref(routeChannel.value || 'person');
-const configChannel = computed(() => workspace.channels.find(channel => channel.id === (routeChannel.value || selectedId.value)) ?? workspace.channels[0]);
+const selectedId = ref(routeChannel.value || workspace.channels[0]?.id);
+const automaticLayout = computed(() => workspace.channels.length > 2 ? 4 : Math.max(1, workspace.channels.length));
+const manualLayout = ref(null);
+const pageIndex = ref(0);
+const layout = computed({
+    get: () => manualLayout.value ?? automaticLayout.value,
+    set: value => {
+        manualLayout.value = value;
+        FocusChannel(selectedId.value);
+    }
+});
+const pageCount = computed(() => Math.ceil(workspace.channels.length / layout.value));
+const visibleChannels = computed(() => workspace.channels.slice(pageIndex.value * layout.value, (pageIndex.value + 1) * layout.value));
+const emptySlots = computed(() => layout.value - visibleChannels.value.length);
 const selected = computed(() => workspace.channels.find(channel => channel.id === selectedId.value));
 const localFrames = reactive({});
 const pausedPreviews = reactive({});
 const frame = computed(() => {
+    if (!selected.value) {
+        return null;
+    }
     if (IsBrowserSource(selected.value.source)) {
         return localFrames[selectedId.value];
     }
@@ -131,8 +164,13 @@ function Open(view, channel) {
     router.push({ name: 'videoRecognition', query });
 }
 
-function Diagnose(id) {
-    router.push({ name: 'monitoring', query: { view: 'video', channel: id } });
+function FocusChannel(id) {
+    const index = workspace.channels.findIndex(item => item.id === id);
+    pageIndex.value = index < 0 ? 0 : Math.floor(index / layout.value);
+}
+
+function GroupLabel(index) {
+    return workspace.channels.slice(index * layout.value, (index + 1) * layout.value).map(channel => channel.name).join(' / ');
 }
 
 function UpdateLocal(id, value) {
@@ -147,11 +185,23 @@ function Timed(key) {
 watch([tab, routeChannel], ([view, channel]) => {
     if (channel) {
         selectedId.value = channel;
+        if (view === 'live') {
+            FocusChannel(channel);
+        }
     }
     if (view !== 'live') {
         Object.keys(localFrames).forEach(id => { delete localFrames[id]; });
         Object.keys(pausedPreviews).forEach(id => { delete pausedPreviews[id]; });
     }
+}, { immediate: true });
+watch(visibleChannels, entries => {
+    if (!entries.some(item => item.id === selectedId.value)) {
+        selectedId.value = entries[0]?.id;
+    }
+});
+watch(() => workspace.channels.length, () => {
+    manualLayout.value = null;
+    pageIndex.value = 0;
 });
 </script>
 

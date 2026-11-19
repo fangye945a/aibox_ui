@@ -46,7 +46,7 @@
                     <template #default="{ row }">#{{ row.id }} · {{ DateText(row.createdAt) }}</template>
                 </el-table-column>
                 <el-table-column label="通道" min-width="140">
-                    <template #default="{ row }">{{ ChannelName(row.channelId) }}<br><small>{{ row.modelId }}</small></template>
+                    <template #default="{ row }">{{ row.channelName ?? ChannelName(row.channelId) }}<br><small>{{ row.modelId }}</small></template>
                 </el-table-column>
                 <el-table-column label="检测结果" min-width="200">
                     <template #default="{ row }">{{ ResultText(row) }}</template>
@@ -64,7 +64,7 @@
             <el-pagination v-model:current-page="page" :page-size="PAGE_SIZE" :total="records.length" layout="prev, pager, next" />
             <el-dialog v-model="snapshotOpen" :title="`历史截图 · #${snapshot?.id ?? ''}`" width="min(700px, 94vw)" @opened="PaintSnapshot">
                 <p v-if="snapshot" class="video-muted">
-                    {{ DateText(snapshot.createdAt) }} · {{ ChannelName(snapshot.channelId) }} · {{ snapshot.width }} × {{ snapshot.height }}
+                    {{ DateText(snapshot.createdAt) }} · {{ snapshot.channelName ?? ChannelName(snapshot.channelId) }} · {{ snapshot.width }} × {{ snapshot.height }}
                 </p>
                 <canvas ref="snapshotCanvas" class="video-snapshot" :width="snapshot?.width" :height="snapshot?.height" aria-label="历史检测截图"></canvas>
                 <template #footer>
@@ -190,7 +190,7 @@ function CsvCell(value) {
 }
 
 function Export() {
-    const rows = records.value.map(row => [row.id, DateText(row.createdAt), ChannelName(row.channelId), row.modelId,
+    const rows = records.value.map(row => [row.id, DateText(row.createdAt), row.channelName ?? ChannelName(row.channelId), row.modelId,
         row.sequence, row.width, row.height, row.elapsed, ResultText(row), row.timings.pipeline.toFixed(1)]);
     rows.unshift(['记录', '时间', '通道', '模型', '帧号', '宽度', '高度', '源时间戳(ms)', '检测结果', '管线耗时(ms)']);
     DownloadBlob(new Blob(['\ufeff', rows.map(row => row.map(CsvCell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }), 'traceiq-records.csv');

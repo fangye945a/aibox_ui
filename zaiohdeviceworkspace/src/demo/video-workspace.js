@@ -20,6 +20,7 @@ import { CompareFrames, DrawSample, SAMPLE_HEIGHT, SAMPLE_WIDTH } from '@/utils/
 
 export const VIDEO_WORKSPACE = Symbol('video-workspace');
 const CONFIG_KEY = 'video-workspace';
+export const MAX_VIDEO_CHANNELS = 4;
 const SAMPLE_COUNT = 100;
 const RECORD_LIMIT = 400;
 const HOUR_MS = 3600000;
@@ -32,12 +33,14 @@ function ReadConfig(key) {
     }
 }
 
-function MakeChannel(id, name, modelId, saved) {
+/** @brief 初始化可编辑通道并迁移旧版摄像头参数。 */
+export function MakeChannel(id, name, modelId, saved) {
+    const legacy = id === 'person' || id === 'safety';
     const suffix = id === 'person' ? '' : ':safety';
-    const camera = ReadConfig(`video-camera${suffix}`);
-    const algorithm = ReadConfig(`video-algorithm${suffix}`);
+    const camera = !saved && legacy ? ReadConfig(`video-camera${suffix}`) : {};
+    const algorithm = !saved && legacy ? ReadConfig(`video-algorithm${suffix}`) : {};
     return {
-        id, name, kind: id === 'person' ? 'person' : 'yolo26n', modelId, autostart: true, ...saved,
+        id, name, modelId, autostart: true, ...saved,
         source: {
             type: camera.source === 'local' ? 'usb' : camera.source === 'rtsp' ? 'rtsp' : 'mp4',
             sourceId: 'sample', loop: camera.loop ?? true, rtspUrl: camera.rtspUrl ?? '',
@@ -70,7 +73,8 @@ function SeedRecords(now) {
         const channelId = index % 2 ? 'safety' : 'person';
         const elapsed = index * 1250;
         return {
-            id: SAMPLE_COUNT - index, channelId, modelId: channelId === 'person' ? 'person-baseline' : 'yolo26n-baseline',
+            id: SAMPLE_COUNT - index, channelId, channelName: channelId === 'person' ? '人员检测' : '安全检测',
+            modelId: channelId === 'person' ? 'person-baseline' : 'yolo26n-baseline',
             sequence: SAMPLE_COUNT - index, createdAt: now - (index + 1) * 300000, elapsed,
             width: 640, height: 360, mode: 'model',
             detections: ModelDetections(elapsed, { channelId, confidence: 0.25, nmsIou: 0.45 }), timings: FrameTimings(channelId, index)
@@ -78,39 +82,23 @@ function SeedRecords(now) {
     });
 }
 
-/** @brief 生成一次模拟板端指标采样；缺失的设备接口保留空读数。 */
-export function MetricSample(timestamp) {
-    const wave = Math.sin(timestamp / 12500);
-    const make = (id, label, value, unit, details) => ({ id, label, value, unit, ...details });
-    return { timestamp, metrics: [
-        make('cpu', 'CPU 使用率', 48 + wave * 14, '%', { scope: '整板', source: '/proc/stat（模拟）', window: 2 }),
-        make('memory', '内存使用率', 53 + wave * 3, '%', { scope: '整板', source: '/proc/meminfo（模拟）', window: 0 }),
-        make('npu', 'NPU 使用率', 61 + wave * 12, '%', { scope: 'NPU 核心 0', source: '驱动计数（模拟）', window: 2 }),
-        make('temperature', '芯片温度', 73 + wave * 2, '°C', { scope: 'SoC', source: '温度传感器（模拟）', window: 0 }),
-        make('power', '板端功耗', null, 'W', { scope: '整板', source: '功耗传感器', window: null, reason: '演示环境没有功耗传感器' }),
-        make('ethRx', '以太网接收速率', 8.8 + wave * 3, 'Mbps', { scope: 'eth0', source: '网卡字节计数（模拟）', window: 2 }),
-        make('ethTx', '以太网发送速率', 1.6 + wave, 'Mbps', { scope: 'eth0', source: '网卡字节计数（模拟）', window: 2 }),
-        make('ethLink', '以太网协商速率', 1000, 'Mbps', { scope: 'eth0', source: '链路协商（模拟）', window: 0 }),
-        make('ethRxUsage', '以太网接收带宽占用', (8.8 + wave * 3) / 10, '%', { scope: 'eth0', source: '速率 / 协商容量（模拟）', window: 2 }),
-        make('ethTxUsage', '以太网发送带宽占用', (1.6 + wave) / 10, '%', { scope: 'eth0', source: '速率 / 协商容量（模拟）', window: 2 }),
-        make('wifiRx', 'Wi-Fi 接收速率', null, 'Mbps', { scope: 'wlan0', source: '网卡字节计数', window: null, reason: '模拟接口未连接' }),
-        make('wifiTx', 'Wi-Fi 发送速率', null, 'Mbps', { scope: 'wlan0', source: '网卡字节计数', window: null, reason: '模拟接口未连接' })
-    ] };
-}
-
 /** @brief 初始化通道配置、模型资产、历史记录和性能样本。 */
 export function CreateVideoWorkspace() {
     const now = Date.now();
     const saved = ReadConfig(CONFIG_KEY);
+    const legacy = [
+        MakeChannel('person', '人员检测', 'person-baseline', saved.person), MakeChannel('safety', '安全检测', 'yolo26n-baseline', saved.safety)
+    ];
+    const channels = Array.isArray(saved.channels) ? saved.channels.slice(0, MAX_VIDEO_CHANNELS).map(item =>
+        MakeChannel(item.id, item.name, item.modelId, item)) : legacy;
     return reactive({
-        channels: [MakeChannel('person', '人员检测', 'person-baseline', saved.person), MakeChannel('safety', '安全检测', 'yolo26n-baseline', saved.safety)],
-        models: [MakeBaseline('person-baseline', 'Person', 'person'), MakeBaseline('yolo26n-baseline', 'YOLO26n', 'yolo26n'), ...(saved.models ?? [])],
+        channels, models: [MakeBaseline('person-baseline', 'Person', 'person'), MakeBaseline('yolo26n-baseline', 'YOLO26n', 'yolo26n'), ...(saved.models ?? [])],
         sources: [{ id: 'sample', name: '内置示例画面', size: null, createdAt: null }],
         records: SeedRecords(now), nextRecord: SAMPLE_COUNT + 1,
-        metrics: Array.from({ length: 31 }, (_, index) => MetricSample(now - (30 - index) * 2000)),
-        timings: ['person', 'safety'].map(id => Array.from({ length: 31 }, (_, index) => ({
-            timestamp: now - (30 - index) * 2000, ...FrameTimings(id, index)
-        })))
+        sampledAt: now,
+        timings: Object.fromEntries(legacy.map(channel => [channel.id, Array.from({ length: 31 }, (_, index) => ({
+            timestamp: now - (30 - index) * 2000, ...FrameTimings(channel.id, index)
+        }))]))
     });
 }
 
@@ -207,13 +195,15 @@ function RunFrame(workspace, channel, runtime, now) {
     }
     const elapsed = Math.round(now - channel.startedAt);
     const { mode } = channel.algorithm;
+    const kind = workspace.models.find(model => model.id === channel.modelId)?.kind ?? 'person';
+    const profile = kind === 'person' ? 'person' : 'safety';
     const result = mode === 'motion' ? SampleMotion(runtime, elapsed, channel.algorithm) : { detections: [], motion: null };
     if (mode === 'model') {
-        result.detections = ModelDetections(elapsed, { ...channel.algorithm, channelId: channel.id });
+        result.detections = ModelDetections(elapsed, { ...channel.algorithm, channelId: profile });
     }
     const sequence = ++runtime.sequence;
     const frame = { sequence, elapsed, mode, ...result, width: 640, height: 360, inputWidth: 640, inputHeight: 360,
-        modelId: mode === 'model' ? channel.modelId : null, timings: mode === 'model' ? FrameTimings(channel.id, sequence) : null };
+        modelId: mode === 'model' ? channel.modelId : null, timings: mode === 'model' ? FrameTimings(profile, sequence) : null };
     channel.fps = Math.min(13, Math.round(1000 / Math.max(1, now - runtime.lastFrame)));
     runtime.lastFrame = now;
     channel.frame = frame;
@@ -225,7 +215,7 @@ function RunFrame(workspace, channel, runtime, now) {
 
 /** @brief 在已登录的控制台内模拟板端任务，路由切换不会销毁通道。 */
 export function RunVideoWorkspace(workspace) {
-    const runtimes = workspace.channels.map(() => ({ sequence: 0 }));
+    const runtimes = new WeakMap();
     for (const channel of workspace.channels) {
         if (channel.autostart && !IsBrowserSource(channel.source)) {
             StartVideoChannel(workspace, channel);
@@ -233,7 +223,12 @@ export function RunVideoWorkspace(workspace) {
     }
     const frames = setInterval(() => {
         const now = performance.now();
-        workspace.channels.forEach((channel, index) => RunFrame(workspace, channel, runtimes[index], now));
+        for (const channel of workspace.channels) {
+            if (!runtimes.has(channel)) {
+                runtimes.set(channel, { sequence: 0 });
+            }
+            RunFrame(workspace, channel, runtimes.get(channel), now);
+        }
     }, 80);
     const performanceTimer = setInterval(() => SamplePerformance(workspace), 2000);
     return () => {
@@ -244,10 +239,9 @@ export function RunVideoWorkspace(workspace) {
 
 /** @brief 保存通道和模型元数据，避免把本地视频或模型文件写入持久配置。 */
 export function SaveVideoWorkspace(workspace) {
-    const config = Object.fromEntries(workspace.channels.map(({ id, name, source, algorithm, modelId, autostart }) =>
-        [id, { name, source, algorithm, modelId, autostart }]));
-    config.models = workspace.models.filter(model => model.status !== '内置基线');
-    storage.setItem(CONFIG_KEY, JSON.stringify(config));
+    const channels = workspace.channels.map(({ id, name, source, algorithm, modelId, autostart }) => ({ id, name, source, algorithm, modelId, autostart }));
+    const models = workspace.models.filter(model => model.status !== '内置基线');
+    storage.setItem(CONFIG_KEY, JSON.stringify({ channels, models }));
 }
 
 /** @brief 加入浏览器会话内的视频文件，供实时检测页选择。 */
@@ -257,7 +251,7 @@ export function AddVideoSource(workspace, file) {
 
 /** @brief 添加模拟历史记录，同时限制记录数。 */
 export function AddVideoRecord(workspace, channel, frame) {
-    const record = { ...frame, id: workspace.nextRecord++, channelId: channel.id, createdAt: Date.now() };
+    const record = { ...frame, id: workspace.nextRecord++, channelId: channel.id, channelName: channel.name, createdAt: Date.now() };
     workspace.records.unshift(record);
     if (workspace.records.length > RECORD_LIMIT) {
         workspace.records.pop();
@@ -267,13 +261,14 @@ export function AddVideoRecord(workspace, channel, frame) {
 /** @brief 记录性能读数，清理一小时前的样本。 */
 export function SamplePerformance(workspace) {
     const now = Date.now();
-    workspace.metrics.push(MetricSample(now));
-    for (const [index, channel] of workspace.channels.entries()) {
+    workspace.sampledAt = now;
+    for (const channel of workspace.channels) {
         if (channel.state === 'running' && channel.frame?.timings) {
-            workspace.timings[index].push({ timestamp: now, ...channel.frame.timings });
+            workspace.timings[channel.id] ??= [];
+            workspace.timings[channel.id].push({ timestamp: now, ...channel.frame.timings });
         }
     }
-    for (const samples of [workspace.metrics, ...workspace.timings]) {
+    for (const samples of Object.values(workspace.timings)) {
         while (samples.length && samples[0].timestamp < now - HOUR_MS) {
             samples.shift();
         }
@@ -286,7 +281,7 @@ export function FilterVideoRecords(workspace, filters) {
     const start = filters.start ? new Date(filters.start).getTime() : -Infinity;
     const end = filters.end ? new Date(filters.end).getTime() : Infinity;
     return workspace.records.filter(record => {
-        const channelName = workspace.channels.find(channel => channel.id === record.channelId)?.name;
+        const channelName = record.channelName ?? workspace.channels.find(channel => channel.id === record.channelId)?.name;
         const search = [record.id, record.modelId, channelName, ...record.detections.map(item => DetectionLabel(item.kind))].join(' ').toLowerCase();
         return (!filters.channel || filters.channel === record.channelId) && record.createdAt >= start && record.createdAt <= end && search.includes(query);
     });

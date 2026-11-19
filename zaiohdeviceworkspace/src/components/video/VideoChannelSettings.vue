@@ -11,10 +11,6 @@
 -->
 <template>
     <section class="video-section" :aria-label="`${channel.name}配置`">
-        <div class="video-heading">
-            <h2>{{ channel.name }} · 通道配置</h2>
-            <el-tag size="small" type="info">{{ VideoChannelStatus(channel) }}</el-tag>
-        </div>
         <el-form class="video-form" label-position="top" @submit.prevent="Save">
             <div class="video-columns">
                 <section class="video-panel">
@@ -23,7 +19,7 @@
                         <el-select v-model="draft.type" aria-label="视频源类型">
                             <el-option label="示例或本地 MP4" value="mp4" />
                             <el-option label="RTSP 网络摄像头（模拟）" value="rtsp" />
-                            <el-option v-if="channel.id === 'person'" label="USB 摄像头" value="usb" />
+                            <el-option label="USB 摄像头" value="usb" />
                         </el-select>
                     </el-form-item>
                     <template v-if="draft.type === 'mp4'">
@@ -81,6 +77,11 @@
                 </section>
                 <section class="video-panel">
                     <h3>算法与模型</h3>
+                    <el-form-item v-if="algorithm.mode === 'model'" label="算法模型">
+                        <el-select v-model="modelId" aria-label="算法模型">
+                            <el-option v-for="model in compatible" :key="model.id" :label="model.name" :value="model.id" />
+                        </el-select>
+                    </el-form-item>
                     <el-form-item label="算法">
                         <el-select v-model="algorithm.mode" aria-label="算法">
                             <el-option label="模型检测（模拟）" value="model" />
@@ -93,12 +94,12 @@
                             <el-slider v-model="algorithm.confidence" aria-label="置信度阈值" :min="0.01" :max="1" :step="0.01"
                                 show-input :show-input-controls="false" />
                         </el-form-item>
-                        <el-form-item v-if="channel.id === 'person'" label="NMS IoU 阈值">
+                        <el-form-item v-if="selectedModel?.kind === 'person'" label="NMS IoU 阈值">
                             <el-slider v-model="algorithm.nmsIou" aria-label="NMS IoU 阈值" :min="0.01" :max="1" :step="0.01" show-input :show-input-controls="false" />
                         </el-form-item>
                         <p v-else class="video-muted">NMS IoU：安全帽模型不适用</p>
                     </template>
-                    <template v-else-if="algorithm.mode === 'motion'">
+                    <template v-if="algorithm.mode === 'motion'">
                         <el-form-item label="灵敏度"><el-slider v-model="algorithm.sensitivity" aria-label="灵敏度" :min="1" :max="100" /></el-form-item>
                         <el-form-item label="最小面积 (%)">
                             <el-input-number v-model="algorithm.minArea" :min="0.1" :max="100" :step="0.1" :precision="1" />
@@ -108,12 +109,6 @@
                         </el-form-item>
                     </template>
                     <el-checkbox v-if="algorithm.mode !== 'none'" v-model="algorithm.showBox">显示检测框</el-checkbox>
-                    <el-form-item v-if="algorithm.mode === 'model'" label="绑定模型">
-                        <el-select v-model="modelId" aria-label="绑定模型">
-                            <el-option v-for="model in compatible" :key="model.id" :label="model.name" :value="model.id" />
-                        </el-select>
-                        <el-button link type="primary" @click="$emit('manage-models')">管理模型资产</el-button>
-                    </el-form-item>
                     <h3 class="video-divider">运行设置</h3>
                     <el-form-item label="通道名称"><el-input v-model.trim="name" aria-label="通道名称" maxlength="80" required /></el-form-item>
                     <el-checkbox v-model="autostart" :disabled="IsBrowserSource(draft)">模拟 AIBox 启动时自动检测</el-checkbox>
@@ -121,8 +116,8 @@
                 </section>
             </div>
             <div class="video-actions video-divider">
-                <el-button type="primary" native-type="submit" :disabled="!changed || busy">保存通道配置</el-button>
-                <el-button @click="$emit('show-live')">返回实时检测</el-button>
+                <el-button type="primary" native-type="submit" :disabled="(!creating && !changed) || busy">保存通道配置</el-button>
+                <el-button @click="$emit('cancel')">取消</el-button>
                 <span v-if="running && taskChanged" class="video-muted">
                     {{ IsBrowserSource(draft) ? '切换到本地输入会停止该通道的模拟检测。' : `保存时仅重启 ${channel.name} 的检测任务。` }}
                 </span>
@@ -136,13 +131,13 @@ import { computed, reactive, ref, shallowRef, watch } from 'vue';
 import { Refresh } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { DateText } from '@/demo/video-recognition';
-import { AddVideoSource, IsBrowserSource, SaveVideoWorkspace, StartVideoChannel, StopVideoChannel, VideoChannelStatus, VideoSourceError } from '@/demo/video-workspace';
+import { AddVideoSource, IsBrowserSource, SaveVideoWorkspace, StartVideoChannel, StopVideoChannel, VideoSourceError } from '@/demo/video-workspace';
 import VideoChannel from './VideoChannel.vue';
 
 const RESOLUTIONS = ['640x480', '1280x720', '1920x1080'];
 const FRAME_RATES = [15, 25, 30];
-const props = defineProps({ channel: Object, workspace: Object });
-const emit = defineEmits(['manage-models', 'show-live']);
+const props = defineProps({ channel: Object, workspace: Object, creating: Boolean });
+const emit = defineEmits(['saved', 'cancel']);
 const channel = props.channel;
 const draft = reactive({ ...channel.source });
 const algorithm = reactive({ ...channel.algorithm });
@@ -159,7 +154,8 @@ const savedDeviceMissing = computed(() => draft.deviceId && !devices.value.some(
 const uploaded = computed(() => props.workspace.sources.filter(item => item.file));
 const running = computed(() => channel.state === 'running');
 const compatible = computed(() => props.workspace.models.filter(model =>
-    model.kind === channel.kind && model.target === 'rk3588' && model.status !== '已暂存'));
+    model.target === 'rk3588' && model.status !== '已暂存'));
+const selectedModel = computed(() => compatible.value.find(model => model.id === modelId.value));
 const taskChanged = computed(() => JSON.stringify(draft) !== JSON.stringify(channel.source) ||
     JSON.stringify(algorithm) !== JSON.stringify(channel.algorithm) || modelId.value !== channel.modelId);
 const changed = computed(() => taskChanged.value || name.value !== channel.name || autostart.value !== channel.autostart);
@@ -205,6 +201,11 @@ async function Save() {
     }
     const error = VideoSourceError(props.workspace, draft);
     const validParameters = algorithm.mode !== 'motion' || [algorithm.sensitivity, algorithm.minArea, algorithm.interval].every(Number.isFinite);
+    const duplicateName = props.workspace.channels.some(item => item.id !== channel.id && item.name === name.value);
+    if (duplicateName) {
+        ElMessage.warning('通道名称已存在');
+        return;
+    }
     if (error || !name.value || !compatible.value.some(model => model.id === modelId.value) || !validParameters) {
         ElMessage.warning(error || '请检查通道名称、模型和检测参数');
         return;
@@ -215,11 +216,22 @@ async function Save() {
         const restart = running.value && applyTaskChange;
         if (restart) {
             const message = IsBrowserSource(draft) ? `保存后将停止 ${channel.name} 的模拟任务，可在实时页打开本地预览。` :
-                `保存时将短暂重启 ${channel.name}，另一通道继续运行。`;
+                `保存时将短暂重启 ${channel.name}，其他通道继续运行。`;
             await ElMessageBox.confirm(message, '应用运行配置', { confirmButtonText: '保存并应用', cancelButtonText: '返回编辑' });
         }
-        Object.assign(channel, { name: name.value, source: { ...draft }, algorithm: { ...algorithm }, modelId: modelId.value, autostart: autostart.value });
-        SaveVideoWorkspace(props.workspace);
+        const updated = { name: name.value, source: { ...draft }, algorithm: { ...algorithm }, modelId: modelId.value, autostart: autostart.value };
+        const previous = { ...channel };
+        Object.assign(channel, updated);
+        if (props.creating) {
+            emit('saved', channel);
+            return;
+        }
+        try {
+            SaveVideoWorkspace(props.workspace);
+        } catch (saveError) {
+            Object.assign(channel, previous);
+            throw saveError;
+        }
         if (restart && !IsBrowserSource(channel.source)) {
             StartVideoChannel(props.workspace, channel);
         } else if (applyTaskChange) {
@@ -228,7 +240,7 @@ async function Save() {
         preview.value = null;
         verification.value = '';
         ElMessage.success('通道配置已保存');
-        emit('show-live');
+        emit('saved', channel);
     } catch (error) {
         if (error !== 'cancel' && error !== 'close') {
             ElMessage.error('无法保存通道配置');
