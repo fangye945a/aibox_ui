@@ -17,10 +17,10 @@ export default {
       const name = this.$route.name;
       const view = this.$route.query.view;
       if (name === 'monitoring') {
-        return view === 'video' ? '监控运维 · 视频诊断' : '监控运维 · 整机状态';
+        return '监控运维 · 整机状态';
       }
       if (name === 'videoRecognition') {
-        const map = { records: '检测记录', settings: '通道配置', models: '模型管理' };
+        const map = { records: '检测记录', settings: '通道配置', models: '模型管理', diagnostics: '视频诊断' };
         return view && map[view] ? `视频分析 · ${map[view]}` : '视频分析 · 实时检测';
       }
       const titles = {

@@ -46,23 +46,13 @@
 <script>
   import { mapGetters } from 'vuex';
 
-  const PAGES_DEMO = process.env.VUE_APP_PAGES_DEMO === 'true';
-
   export default {
     name: 'VlSlide',
     data() {
       return {
         navList: [
           { key: 'home', label: '首页', icon: 'home', rName: 'home' },
-          {
-            key: 'monitoring',
-            label: '监控运维',
-            icon: 'jkyw',
-            children: [
-              { key: 'monitoring:device', label: '整机状态', rName: 'monitoring', query: { view: 'device' } },
-              { key: 'monitoring:video', label: '视频诊断', rName: 'monitoring', query: { view: 'video' } },
-            ],
-          },
+          { key: 'monitoring', label: '监控运维', icon: 'jkyw', rName: 'monitoring' },
           {
             key: 'videoRecognition',
             label: '视频分析',
@@ -72,13 +62,14 @@
               { key: 'videoRecognition:records', label: '检测记录', rName: 'videoRecognition', query: { view: 'records' } },
               { key: 'videoRecognition:settings', label: '通道配置', rName: 'videoRecognition', query: { view: 'settings' } },
               { key: 'videoRecognition:models', label: '模型管理', rName: 'videoRecognition', query: { view: 'models' } },
+              { key: 'videoRecognition:diagnostics', label: '视频诊断', rName: 'videoRecognition', query: { view: 'diagnostics' } },
             ],
           },
           { key: 'log', label: '日志', icon: 'log', rName: 'log' },
-          { system: true, key: 'sysupdate', label: '系统升级', icon: 'xtsj', rName: 'sysupdate' },
+          { key: 'sysupdate', label: '系统升级', icon: 'xtsj', rName: 'sysupdate' },
           { key: 'password', label: '修改密码', icon: 'xgmm', rName: 'password' },
           { key: 'remote', label: '远程桌面', icon: 'yczm', rName: 'remote' },
-        ].filter(item => !PAGES_DEMO || item.rName !== 'home'),
+        ],
         isCollapse: false,
       };
     },
@@ -87,30 +78,27 @@
       activeIndex() {
         const name = this.$route.name;
         const view = this.$route.query.view;
-        if (name === 'monitoring') {
-          return view === 'video' ? 'monitoring:video' : 'monitoring:device';
-        }
         if (name === 'videoRecognition') {
-          const key = ['records', 'settings', 'models'].includes(view) ? view : 'live';
+          const key = ['records', 'settings', 'models', 'diagnostics'].includes(view) ? view : 'live';
           return `videoRecognition:${key}`;
         }
         return name;
       },
       defaultOpeneds() {
         const name = this.$route.name;
-        return ['monitoring', 'videoRecognition'].includes(name) ? [name] : [];
+        return name === 'videoRecognition' ? [name] : [];
       },
     },
     watch: {
       '$route.name': {
         immediate: true,
         handler(name) {
-          if (['videoRecognition', 'monitoring'].includes(name) && window.matchMedia('(max-width: 620px)').matches) {
+          if (name === 'videoRecognition' && window.matchMedia('(max-width: 620px)').matches) {
             this.isCollapse = true;
           }
           // 路由切换时自动展开当前模块的父菜单
           this.$nextTick(() => {
-            if (['monitoring', 'videoRecognition'].includes(name) && !this.isCollapse && this.$refs.menu) {
+            if (name === 'videoRecognition' && !this.isCollapse && this.$refs.menu) {
               this.$refs.menu.open(name);
             }
           });
@@ -119,15 +107,13 @@
     },
     methods: {
       goHome() {
-        if (!PAGES_DEMO) {
-          this.$router.push({ name: 'home' });
-        }
+        this.$router.push({ name: 'home' });
       },
       handleSelect(key) {
         const flat = this.navList.flatMap(item => item.children ? item.children : [item]);
         const target = flat.find(entry => entry.key === key);
         if (!target) return;
-        if (['videoRecognition', 'monitoring'].includes(target.rName) && window.matchMedia('(max-width: 620px)').matches) {
+        if (target.rName === 'videoRecognition' && window.matchMedia('(max-width: 620px)').matches) {
           this.isCollapse = true;
         }
         const query = { ...(target.query || {}) };

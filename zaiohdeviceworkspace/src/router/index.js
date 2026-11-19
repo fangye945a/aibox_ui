@@ -26,11 +26,7 @@ const routes = [
         name: PAGES_DEMO ? 'videoRecognition' : 'home'
       },
       children: [
-        // 旧演示书签统一跳转到视频分析。
-        PAGES_DEMO ? {
-          path: '/home',
-          redirect: { name: 'videoRecognition' }
-        } : {
+        {
           path: '/home',
           name: 'home',
           component: () => import('@/views/home.vue'),
