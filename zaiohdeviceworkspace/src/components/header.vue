@@ -25,6 +25,7 @@ export default {
       }
       const titles = {
         home: '首页',
+        assistant: '智能问答',
         log: '日志',
         sysupdate: '系统升级',
         password: '修改密码',

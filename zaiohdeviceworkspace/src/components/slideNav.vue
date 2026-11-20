@@ -31,7 +31,8 @@
           </el-sub-menu>
           <!-- 普通一级菜单 -->
           <el-menu-item v-else :index="item.key">
-            <svg-icon :icon-class="item.icon" />
+            <el-icon v-if="item.key === 'assistant'" class="assistant-nav-icon"><ChatDotRound /></el-icon>
+            <svg-icon v-else :icon-class="item.icon" />
             <template #title>{{ item.label }}</template>
           </el-menu-item>
         </template>
@@ -44,15 +45,18 @@
   </aside>
 </template>
 <script>
+  import { ChatDotRound } from '@element-plus/icons-vue';
   import { mapGetters } from 'vuex';
 
   export default {
     name: 'VlSlide',
+    components: { ChatDotRound },
     data() {
       return {
         navList: [
           { key: 'home', label: '首页', icon: 'home', rName: 'home' },
           { key: 'monitoring', label: '监控运维', icon: 'jkyw', rName: 'monitoring' },
+          { key: 'assistant', label: '智能问答', rName: 'assistant' },
           {
             key: 'videoRecognition',
             label: '视频分析',
@@ -93,7 +97,7 @@
       '$route.name': {
         immediate: true,
         handler(name) {
-          if (name === 'videoRecognition' && window.matchMedia('(max-width: 620px)').matches) {
+          if (['assistant', 'videoRecognition'].includes(name) && window.matchMedia('(max-width: 620px)').matches) {
             this.isCollapse = true;
           }
           // 路由切换时自动展开当前模块的父菜单

@@ -33,6 +33,12 @@ const routes = [
             unRequireLogin: false,
           }
         },
+        {
+          path: '/assistant',
+          name: 'assistant',
+          component: () => import('@/views/deviceAssistant.vue'),
+          meta: { title: '智能问答', unRequireLogin: false },
+        },
         //监控运维
         {
           path: '/monitoring',
