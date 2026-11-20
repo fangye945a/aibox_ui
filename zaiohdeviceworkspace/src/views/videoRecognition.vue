@@ -13,10 +13,6 @@
     <section class="recognition">
         <!-- 实时检测 -->
         <template v-if="tab === 'live'">
-            <header class="video-heading recognition-header">
-                <h1>实时检测</h1>
-                <el-tag type="info" effect="plain">Mock 演示</el-tag>
-            </header>
             <div v-if="selected" class="video-live-toolbar">
                 <div class="video-channel-picker">
                     <label for="live-channel">视频通道</label>
@@ -77,10 +73,6 @@
         <VideoConfiguration v-else-if="tab === 'models'" :workspace="workspace" />
         <!-- 视频诊断 -->
         <template v-else-if="tab === 'diagnostics'">
-            <header class="video-heading recognition-header">
-                <h1>视频诊断</h1>
-                <el-tag type="info" effect="plain">Mock 演示</el-tag>
-            </header>
             <el-radio-group :model-value="routeChannel" aria-label="诊断通道" @change="Open('diagnostics', $event)">
             <el-radio-button value="">全部通道</el-radio-button>
             <el-radio-button v-for="item in workspace.channels" :key="item.id" :value="item.id">{{ item.name }}</el-radio-button>

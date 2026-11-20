@@ -14,15 +14,12 @@
 -->
 <template>
     <div class="assistant-page">
-        <section class="assistant-heading">
-            <div>
-                <h1>智能问答</h1>
-                <p>查询设备状态、资源使用情况和系统告警。</p>
-            </div>
+        <div class="assistant-intro">
+            <p>查询设备状态、资源使用情况和系统告警。</p>
             <el-tag :type="status.demo ? 'info' : status.ready ? 'success' : 'warning'" effect="light">
                 {{ status.demo ? '模拟演示' : status.label }}
             </el-tag>
-        </section>
+        </div>
 
         <div class="assistant-grid">
             <section class="assistant-card conversation" aria-label="设备问答">
@@ -193,12 +190,11 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .assistant-page { padding: 24px; color: #2b3f5c; font-size: 14px; max-width: 1440px; margin: auto; }
-.assistant-heading, .card-header, .model-heading, .question, .composer-actions {
+.assistant-intro, .card-header, .model-heading, .question, .composer-actions {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
 }
-.assistant-heading { margin-bottom: 18px; }
-.assistant-heading h1 { margin: 0 0 6px; font-size: 22px; line-height: 1.35; color: #1d2129; }
-.assistant-heading p, .model-description { margin: 0; color: #66758a; line-height: 1.6; }
+.assistant-intro { margin-bottom: 14px; }
+.assistant-intro p, .model-description { margin: 0; color: #66758a; line-height: 1.6; }
 .assistant-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(215px, 275px); gap: 16px; align-items: start; }
 .assistant-card { min-width: 0; background: #fff; border: 1px solid #e6edf5; border-radius: 10px; overflow: hidden; }
 .card-header { padding: 13px 16px; border-bottom: 1px solid #e6edf5; }

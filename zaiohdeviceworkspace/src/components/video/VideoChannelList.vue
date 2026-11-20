@@ -12,10 +12,7 @@
 <template>
     <section class="video-section" aria-label="通道列表">
         <div class="video-heading recognition-header">
-            <div>
-                <h1>通道配置</h1>
-                <p class="video-subtitle">已配置 {{ workspace.channels.length }} / {{ MAX_VIDEO_CHANNELS }} 路</p>
-            </div>
+            <p class="video-subtitle">已配置 {{ workspace.channels.length }} / {{ MAX_VIDEO_CHANNELS }} 路</p>
             <el-button type="primary" :icon="Plus" :disabled="workspace.channels.length >= MAX_VIDEO_CHANNELS" @click="Add">添加通道</el-button>
         </div>
         <div v-if="workspace.channels.length" class="video-channel-filter" aria-label="筛选通道">

@@ -14,8 +14,7 @@
  */
 
 .recognition { padding: 16px 20px; background: #fff; border-radius: 12px; color: inherit; font-size: 14px; line-height: 1.5; min-width: 0; }
-.recognition h1, .recognition h2, .recognition h3 { margin: 0; line-height: 1.4; }
-.recognition h1 { font-size: 17px; font-weight: 600; color: rgba(0,0,0,0.9); }
+.recognition h2, .recognition h3 { margin: 0; line-height: 1.4; }
 .recognition h2 { font-size: 15px; font-weight: 600; color: rgba(0,0,0,0.9); }
 .recognition h3 { font-size: 14px; font-weight: 600; color: rgba(0,0,0,0.85); }
 .recognition-header { padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid #EEE; }
@@ -127,7 +126,7 @@
 .recognition .video-runtime-details { border-top: 1px solid #e2e9f0; padding-top: 10px; margin-top: 12px; }
 .recognition .video-runtime-details summary, .recognition .video-algorithm-fields summary { cursor: pointer; font-weight: 600; }
 .recognition .video-runtime-details summary { color: #315e85; }
-.recognition .video-subtitle { margin: 4px 0 0; color: #52667c; }
+.recognition .video-subtitle { margin: 0; color: #52667c; }
 .recognition .video-channel-filter { margin: 0 0 12px; }
 .recognition .video-channel-filter .el-input { width: min(100%, 260px); }
 .recognition .video-channel-filter .el-select { width: min(100%, 160px); }

@@ -1,6 +1,9 @@
 <template>
   <div class="vl-header flex-between">
-    <div class="page-title">{{ pageTitle }}</div>
+    <div class="page-heading">
+      <h1 class="page-title">{{ pageTitle }}</h1>
+      <el-tag v-if="isMockPage" type="info" effect="plain" size="small">模拟演示</el-tag>
+    </div>
     <div class='headTxt cursor'>
       <el-avatar :size="35" :src="require('@/assets/img/peo.png')" class="userPhoto"></el-avatar>
       <button type="button" class="logout-btn" aria-label="退出登录" @click="gotoUrl">
@@ -11,27 +14,24 @@
   </div>
 </template>
 <script>
+const g_videoTitles = {
+  records: '检测记录',
+  settings: '通道配置',
+  models: '模型管理',
+  diagnostics: '视频诊断',
+};
+
 export default {
   computed: {
     pageTitle() {
-      const name = this.$route.name;
-      const view = this.$route.query.view;
-      if (name === 'monitoring') {
-        return '监控运维';
+      if (this.$route.name === 'videoRecognition') {
+        const view = this.$route.query.view;
+        return typeof view === 'string' && Object.hasOwn(g_videoTitles, view) ? g_videoTitles[view] : '实时检测';
       }
-      if (name === 'videoRecognition') {
-        const map = { records: '检测记录', models: '模型管理', diagnostics: '视频诊断' };
-        return view && map[view] ? `视频分析 · ${map[view]}` : '视频分析';
-      }
-      const titles = {
-        home: '首页',
-        assistant: '智能问答',
-        log: '日志',
-        sysupdate: '系统升级',
-        password: '修改密码',
-        remote: '远程桌面',
-      };
-      return titles[name] || '边缘本地控制台';
+      return this.$route.meta.title || '边缘本地控制台';
+    },
+    isMockPage() {
+      return ['monitoring', 'videoRecognition'].includes(this.$route.name);
     },
   },
   data () {
@@ -53,8 +53,16 @@ export default {
   color: #1D2129;
   flex-shrink: 0;
   border-bottom: 1px solid #EBEEF2;
-  .page-title {
+  .page-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
     padding: 0 24px;
+    .el-tag { flex-shrink: 0; }
+  }
+  .page-title {
+    margin: 0;
     font-size: 14px;
     font-weight: 600;
     color: #1D2129;
@@ -105,7 +113,7 @@ export default {
 }
 @media (max-width: 620px) {
   .vl-header {
-    .page-title { padding: 0 12px; }
+    .page-heading { padding: 0 12px; }
     .headTxt { padding-right: 8px; }
     .userPhoto { display: none; }
   }

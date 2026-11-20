@@ -81,7 +81,7 @@ const routes = [
           name: 'remote',
           component: () => import('@/views/remote.vue'),
           meta: {
-            title: '远程操控',
+            title: '远程桌面',
             unRequireLogin: false,
           }
         },

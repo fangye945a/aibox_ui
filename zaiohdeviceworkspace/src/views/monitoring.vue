@@ -1,9 +1,5 @@
 <template>
     <section class="recognition monitoring-container">
-        <div class="video-heading recognition-header">
-            <h1>整机状态</h1>
-            <el-tag type="info" effect="plain">Mock 演示</el-tag>
-        </div>
         <div class="monitor-alert-summary" :class="{ 'has-alerts': latestAlert }">
             <el-icon :size="21"><Bell /></el-icon>
             <div class="monitor-alert-copy">
