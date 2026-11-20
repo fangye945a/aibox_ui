@@ -3,8 +3,6 @@ import store from '@/store/';
 import { demoFetch } from '@/demo/data';
 import { storage } from '@/demo/storage';
 
-const PAGES_DEMO = process.env.VUE_APP_PAGES_DEMO === 'true';
-
 const routes = [
     // {
     //   path: '*',
@@ -23,7 +21,7 @@ const routes = [
         unRequireLogin: false
       },
       redirect: {
-        name: PAGES_DEMO ? 'videoRecognition' : 'home'
+        name: 'home'
       },
       children: [
         {

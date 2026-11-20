@@ -69,7 +69,7 @@ const handleCurrentChange=()=> {
               storage.setItem('loginToken',res.data.token);
               storage.setItem('isFirst', 'false');
               // 登录后重新请求HTML和当前资源，避免部署后仍运行旧标签页中的前端代码。
-              window.history.replaceState(window.history.state, '', router.resolve({ name: 'index' }).href);
+              window.history.replaceState(window.history.state, '', router.resolve({ name: 'home' }).href);
               window.location.reload();
             }).catch(() => {}).finally(() => { submitting = false; })
         }

@@ -2,7 +2,7 @@
 
 Vue 3 + Element Plus 旧工程（`../src`）的 React 19 全量重构版本，与旧工程**并行共存**，产物可直接替换现网 `dist`。
 
-GitHub Pages 根地址提供新版 Vue 控制台演示。使用 `demo / Demo1234` 登录后进入视频分析，也可体验模拟远程桌面、样例固件升级、改密和监控曲线。模拟升级任务和改密仅在当前浏览器标签页生效，可在登录页恢复初始演示密码。[打开演示](https://fangye945a.github.io/aibox_ui/)
+GitHub Pages 根地址提供新版 Vue 控制台演示。使用 `demo / Demo1234` 登录后进入首页，也可体验模拟远程桌面、样例固件升级、改密和监控曲线。模拟升级任务和改密仅在当前浏览器标签页生效，可在登录页恢复初始演示密码。[打开演示](https://fangye945a.github.io/aibox_ui/)
 
 本地运行 `npm run build:workspace-demo`，将 `dist` 作为静态站点根目录即可预览 Pages 演示。
 
