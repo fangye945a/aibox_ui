@@ -637,12 +637,20 @@ onBeforeUnmount(() => {
 .settings label { display: grid; gap: 5px; }
 .settings input, .settings select { padding: 9px; border: 1px solid #d8e2ec; border-radius: 5px; font: inherit; }
 .settings-error { color: #a32037; }
-@media (max-width: 620px) {
-    .assistant-page { height: calc(100dvh - 68px); min-height: 470px; padding: 8px 10px 13px; border-radius: 13px; }
-    .assistant-greeting { margin: 66px 0 57px; }
+@media (max-width: 767px) {
+    .assistant-page { height: auto; min-height: calc(100vh - 76px); min-height: calc(100dvh - 76px); padding: 10px; border-radius: 13px; }
+    .assistant-toolbar { flex-wrap: wrap; gap: 6px; }
+    .assistant-toolbar .el-button { margin-left: 0; min-height: 38px; }
+    .assistant-greeting { margin: 42px 0 56px; font-size: clamp(24px, 7vw, 32px); }
     .composer { padding: 10px; border-radius: 16px; }
-    .composer-avatar { width: 72px; height: 57px; right: 12px; }
-    .questions { gap: 5px; margin-top: 12px; }
-    .question { font-size: 12px; padding: 6px 8px; }
+    .composer-avatar { width: 65px; height: 48px; right: 12px; }
+    .has-chat .composer-avatar { display: none; }
+    .messages { max-height: 52vh; max-height: 52dvh; padding: 8px 2px 12px; }
+    .composer-actions .el-button { min-height: 40px; }
+    .add-button, .send-button { width: 40px; }
+    .questions { gap: 6px; margin-top: 14px; }
+    .question { min-height: 38px; text-align: start; font-size: 13px; }
+    .file-chip span, .file-chip .markdown-file { min-width: 0; }
+    .settings input, .settings select { width: 100%; min-width: 0; font-size: 16px; }
 }
 </style>

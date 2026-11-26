@@ -26,6 +26,9 @@
       <div class="tile-tools">
         <button v-if="frame && (focused || fullscreen)" type="button" class="tile-action"
           :aria-expanded="showDetails" @click="showDetails = !showDetails">检测结果</button>
+        <button v-if="!fullscreen" type="button" class="tile-action touch-focus-action" @click="$emit('focus')">
+          {{ focused ? '返回列表' : '单路查看' }}
+        </button>
         <button type="button" class="tile-action fullscreen-action"
           :title="fullscreen ? '退出全屏' : '通道全屏'"
           :aria-label="fullscreen ? '退出全屏' : channel.name + ' 全屏'"
@@ -120,6 +123,7 @@ const modelName = id => props.models.find(model => model.id === id)?.name || id;
 .tile-name strong, .tile-name small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tile-name small { color: #c9d5e2; }
 .tile-action { pointer-events: auto; padding: 5px 8px; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.touch-focus-action { display: none; }
 .tile-action:disabled { opacity: .6; cursor: default; }
 .fullscreen-action { display: grid; place-items: center; width: 34px; height: 34px; font-size: 17px; }
 @media (max-width: 620px) {
@@ -127,4 +131,13 @@ const modelName = id => props.models.find(model => model.id === id)?.name || id;
   .tile-header, .tile-footer { padding: 4px; gap: 4px; }
   .tile-name, .tile-status, .tile-action { font-size: 11px; }
 }
+
+@media (max-width: 767px) {
+  .preview-tile.is-focused { height: auto; aspect-ratio: 16 / 9; }
+  .tile-header, .tile-footer { padding: 8px; }
+  .tile-action { min-height: 36px; }
+  .touch-focus-action { display: inline-block; }
+  .fullscreen-action { display: none; }
+}
+
 </style>

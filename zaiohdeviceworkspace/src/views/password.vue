@@ -79,4 +79,16 @@ const openDialog = async () => {
     color: rgba(0,0,0,0.6);
   }
  }
- </style>
+
+@media (max-width: 767px) {
+  .passwordCon {
+    min-height: 0;
+    padding: 14px;
+    .updpwd { height: auto; align-items: stretch; padding: 22px 0 8px; }
+    .pwd-row { flex-direction: column; align-items: stretch; gap: 6px; }
+    .pwd-row .el-input { width: 100% !important; }
+    .old-pwd-btn { min-height: 44px; }
+  }
+}
+
+</style>

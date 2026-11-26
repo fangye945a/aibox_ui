@@ -3,15 +3,17 @@
     <div class="log-box-left">
       <p class="log-box-left-title">日志</p>
       <div class="log-tabs">
-        <div
+        <button
+          type="button"
           v-for="tab in tabs"
           :key="tab.id"
           class="log-tab"
           :class="{ 'log-tab-active': activeTab === tab.id }"
+          :aria-pressed="activeTab === tab.id"
           @click="handleTabChange(tab.id)"
         >
           {{ tab.name }}
-        </div>
+        </button>
       </div>
     </div>
     <div class="log-box-right">
@@ -32,6 +34,8 @@
           <div><el-button type="primary" @click="handleExport()">导出</el-button></div>
         </div>
 
+        <p class="mobile-table-hint">左右滑动查看完整表格</p>
+        <div class="log-table-scroll" tabindex="0" role="region" aria-label="日志文件列表">
         <el-table
           ref="tableRef"
           :data="tableData"
@@ -71,6 +75,7 @@
             </template>
           </el-table-column>
         </el-table>
+        </div>
 
         <!-- 分页 -->
         <el-pagination
@@ -934,6 +939,12 @@ onMounted(() => {
   padding: 6px;
 }
 .log-tab {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: start;
   padding: 12px ;
   cursor: pointer;
   transition: all 0.3s;
@@ -1169,6 +1180,28 @@ onMounted(() => {
 }
 :deep(.el-button--primary.is-text){
   padding-left:0px;
+}
+
+@media (max-width: 767px) {
+  .log-box { flex-direction: column; height: auto; padding: 0; }
+  .log-box-left { min-width: 0; }
+  .log-box-left-title { display: none; }
+  .log-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+  .log-tab { min-height: 44px; padding: 8px; text-align: center; border-left: 0; border-radius: 6px; }
+  .log-box-right { padding: 12px; }
+  .log-top, .log-top-box, .log-top-box > .flex { flex-wrap: wrap; gap: 8px; }
+  .log-top img { align-self: flex-start; flex-shrink: 0; }
+  .log-top-font { display: block; margin-left: 8px; }
+  .updateUrl { display: inline-block; padding-block: 4px; }
+  .log-top-box > .flex { min-width: 0; }
+  .log-top-box-input { flex: 0 0 100%; margin-right: 0; }
+  .log-top-box .el-button { margin-left: 0; min-height: 40px; }
+  .log-container { height: min(52dvh, 420px); min-height: 220px; }
+  .log-table-scroll { overflow-x: auto; }
+  .log-table-scroll :deep(.el-table) { min-width: 615px; margin-top: 0 !important; border-width: 4px; }
+  .log-table-scroll :deep(.el-table__cell .cell) { overflow-wrap: anywhere; }
+  .log-box-right :deep(.el-pagination) { justify-content: flex-start !important; flex-wrap: wrap; gap: 4px; }
+  .log-box-right :deep(.el-pagination__sizes), .log-box-right :deep(.el-pagination__jump) { display: none; }
 }
 
 </style>

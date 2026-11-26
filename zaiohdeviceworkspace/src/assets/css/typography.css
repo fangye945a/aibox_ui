@@ -346,3 +346,29 @@ button, input, textarea, select, .el-overlay { font-family: var(--workspace-font
 #app .vl-main .monitor-chart-panel .data-note { font-size: 12px; color: var(--workspace-secondary); }
 #app .loginMain .loginCon .tit { font-size: 24px; font-weight: 600; color: #0B5CAD; }
 #app .loginMain .loginCon .note { font-size: 12px; color: rgba(0, 0, 0, .45); }
+
+.mobile-table-hint { display: none; }
+@media (max-width: 767px) {
+  #app .mobile-table-hint { display: block; margin: 8px 0; font-size: 12px; color: #53667b; }
+  .el-overlay-dialog { padding-inline: 12px; }
+  .el-overlay-dialog .el-dialog,
+  .el-overlay-dialog .el-message-box {
+    width: 100%;
+    max-width: 540px;
+    margin: 16px auto;
+  }
+  .el-overlay-dialog .el-dialog__footer {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .el-overlay-dialog .dialog-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .el-overlay-dialog .el-button + .el-button { margin-left: 0; }
+  .el-input__inner, .el-textarea__inner { font-size: 16px; }
+}

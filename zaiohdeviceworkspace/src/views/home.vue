@@ -1234,4 +1234,43 @@ const productImage = computed(() => getProductImage(data.value?.device_info?.pro
     padding: 10px 0px;
   }
  }
+
+@media (max-width: 767px) {
+  .home {
+    .home-top-box {
+      height: auto;
+      flex-direction: column;
+      gap: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .home-top-box-left > div { min-width: 0; overflow-wrap: anywhere; }
+    .home-top-box-right { justify-content: space-between; padding-top: 10px; border-top: 1px solid #edf1f5; }
+    .home-top-box-timeco { justify-content: flex-start; }
+    .home-top-box-time { margin: 0; }
+    .home-center-box, .home-bottom-box { flex-direction: column; margin-bottom: 12px; }
+    .home-bottom-box-left, .home-bottom-box-right { width: 100%; }
+    .home-center-box-center-top, .home-center-box-center-bottom,
+    .home-center-box-right-top, .home-center-box-right-bottom { height: auto; }
+    .home-center-box-left, .home-center-box-right, .home-center-box-center-top, .home-center-box-center-bottom { padding: 14px; }
+    .home-center-box-left .mar { margin: 0; }
+    .memory-image-container { margin-left: 0; }
+    .wdj { height: 140px; }
+    .home-center-box-center-top-title { width: auto; }
+    .formclass { gap: 12px; }
+    .formclass-left, .home-bottom-box-right-one-left { flex-shrink: 0; }
+    .formclass-right, .home-bottom-box-right-one-right { min-width: 0; text-align: end; overflow-wrap: anywhere; }
+    .network-container { padding: 0; }
+    .network-nav { position: static; transform: none; justify-content: flex-end; padding: 0; margin-bottom: 8px; }
+    .network-item-wrapper { flex-direction: column; }
+    .home-bottom-box-right-one { min-height: 0; }
+    .network-image-container { display: none; }
+    .pdflex { justify-content: space-between; gap: 8px; padding-inline: 2px; }
+    .home-bottom-box-right-one-right { margin-left: 0; }
+  }
+  #app .vl-main .home .home-top-box-productModel { font-size: 19px; }
+  #app .vl-main .home .home-top-box-deviceId { font-size: 13px; }
+  #app .vl-main .home-top-box-left .device-photo { width: 76px; height: 55px; }
+}
+
 </style>

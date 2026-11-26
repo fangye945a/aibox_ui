@@ -14,6 +14,8 @@
             <el-button type="primary" :disabled="busy || workspace.channels.length >= 32" @click="edit()">新增通道</el-button>
           </div>
           <p class="edit-rule">修改通道配置前，请先停止该通道的分析。</p>
+          <p class="mobile-table-hint">左右滑动查看完整表格</p>
+          <div class="video-table-scroll" tabindex="0" role="region" aria-label="通道列表">
           <table>
             <thead><tr><th>通道</th><th>安装位置</th><th>来源</th><th>模型</th><th>状态</th><th>操作</th></tr></thead>
             <tbody><tr v-for="channel in workspace.channels" :key="channel.id">
@@ -31,9 +33,10 @@
               </td>
             </tr></tbody>
           </table>
+          </div>
           <p v-if="!workspace.channels.length">暂无通道，请先导入模型并选择视频源。</p>
         </div>
-        <form v-if="draft" class="panel editor" @submit.prevent="save">
+        <form v-if="draft" ref="editorForm" class="panel editor" @submit.prevent="save">
           <h2>{{ draft.id ? '编辑通道' : '新增通道' }}</h2>
           <p v-if="draftLocked" role="status">请先停止该通道的分析，再修改配置。</p>
           <fieldset class="editor-fields" :disabled="draftLocked">
@@ -93,6 +96,8 @@
         <button @click="cloudOpen = !cloudOpen">云目录</button>
       </div>
       <p v-if="cloudOpen" role="status">云目录未接入</p>
+      <p class="mobile-table-hint">左右滑动查看完整表格</p>
+      <div class="video-table-scroll" tabindex="0" role="region" aria-label="设备模型列表">
       <table>
         <thead><tr><th>模型</th><th>版本</th><th>类别</th><th>状态</th><th>操作</th></tr></thead>
         <tbody><tr v-for="model in workspace.models" :key="model.id">
@@ -100,6 +105,7 @@
           <td>板端试加载通过</td><td><button :disabled="busy" @click="exportModel(model)">导出 ZIP</button></td>
         </tr></tbody>
       </table>
+      </div>
       <p v-if="!workspace.models.length">暂无设备模型，请导入模型 ZIP。</p>
     </div>
 
@@ -113,6 +119,8 @@
         </select></label>
         <el-button @click="loadRecords()">刷新</el-button>
       </div>
+      <p class="mobile-table-hint">左右滑动查看完整表格</p>
+      <div class="video-table-scroll" tabindex="0" role="region" aria-label="检测记录列表">
       <table>
         <thead><tr><th>检测时间</th><th>通道</th><th>模型</th><th>帧</th><th>检测结果</th><th>操作</th></tr></thead>
         <tbody><tr v-for="record in records" :key="record.id">
@@ -122,6 +130,7 @@
           <td><el-button link type="primary" @click="showRecord(record)">查看截图</el-button></td>
         </tr></tbody>
       </table>
+      </div>
       <p v-if="!records.length">没有匹配的检测记录。</p>
       <div v-else class="actions"><button :disabled="!recordCursor" @click="loadRecords()">第一页</button>
         <button :disabled="records.length < 50" @click="loadRecords(records[records.length - 1].id)">下一页</button></div>
@@ -148,7 +157,8 @@
 
     <div v-else class="panel">
       <p>帧率均取最近 5 秒。总推理耗时包含前处理、NPU 推理和后处理；预览编码单独统计。四宫格最高 960 宽，单路及 APP 最高 1920 宽；检测截图独立按源分辨率编码，最高 2560 宽。无人观看时停止预览编码，因此不会占用分析吞吐。 {{ demoEnabled ? '演示使用模拟画面和诊断数据。' : '' }}</p>
-      <div class="diagnostics-table">
+      <p class="mobile-table-hint">左右滑动查看完整表格</p>
+      <div class="diagnostics-table" tabindex="0" role="region" aria-label="视频诊断指标">
       <table><thead><tr><th>通道</th><th>运行状态</th><th>预览 FPS</th><th>分析 FPS</th><th>推理帧数</th><th>跳过帧数</th><th>总推理</th><th>NPU 推理</th><th>前处理</th><th>后处理</th><th>预览编码</th><th>重连次数</th><th>错误</th></tr></thead>
         <tbody><tr v-for="channel in workspace.channels" :key="channel.id">
           <td>{{ channel.name }}</td><td>{{ stateLabel(workspace.diagnostics[channel.id]?.state) }}</td>
@@ -176,7 +186,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { EventSourcePolyfill } from 'event-source-polyfill';
 import { DemoEventSource, demoEnabled } from '@/demo/data';
 import { useRoute, useRouter } from 'vue-router';
@@ -193,6 +203,7 @@ const workspace = ref({ channels: [], models: [], videos: [], diagnostics: {}, c
 const liveFrames = ref({});
 const selected = ref([]);
 const draft = ref(null);
+const editorForm = ref(null);
 const records = ref([]);
 const recordChannel = ref('');
 const recordModel = ref('');
@@ -307,6 +318,9 @@ function control(id, action) {
 function edit(channel) {
   draft.value = channel ? { location: '', ...JSON.parse(JSON.stringify(channel)) } :
     { id: '', name: '', location: '', kind: 'mp4', source: '', models: [] };
+  if (window.matchMedia('(max-width: 767px)').matches) {
+    void nextTick(() => editorForm.value?.scrollIntoView({ block: 'start' }));
+  }
 }
 
 function remove(channel) {
@@ -465,4 +479,20 @@ tbody tr:hover { background: #f8fafd; }
 .snapshot-loading { min-height: 160px; display: grid; place-items: center; color: #52667d; }
 @media (max-width: 1000px) { .settings-grid { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 620px) { .panel { padding: 12px; } }
+
+@media (max-width: 767px) {
+  .video-workspace .panel { padding: 12px; }
+  .video-table-scroll { overflow-x: auto; }
+  .video-table-scroll table { min-width: 570px; }
+  .video-table-scroll td { overflow-wrap: normal; }
+  .editor { scroll-margin-top: 12px; }
+  .editor input:not([type=checkbox]), .editor select { width: 100%; min-width: 0; font-size: 16px; }
+  .editor .limits input { width: 75px; }
+  .editor input[type=checkbox] { width: 18px; height: 18px; }
+  .editor .model-option > label { min-height: 36px; }
+  .editor button, .video-table-scroll .actions button { min-height: 40px; }
+  .toolbar label { min-width: 0; flex-wrap: wrap; }
+  .toolbar label:has(input[type=file]) { flex-basis: 100%; }
+}
+
 </style>

@@ -6,7 +6,13 @@
         <p>{{ alertStatus?.message || '正在读取告警状态' }}</p></div>
       <el-button link type="primary" @click="showAlerts">查看告警记录</el-button>
     </div>
-    <el-tabs v-model="activeTab">
+    <div class="mobile-metric-picker">
+      <label for="mobile-metric">监控指标</label>
+      <select id="mobile-metric" v-model="activeTab">
+        <option v-for="metric in metrics" :key="metric.type" :value="metric.type">{{ metric.title }}</option>
+      </select>
+    </div>
+    <el-tabs v-model="activeTab" class="monitor-metric-tabs">
       <el-tab-pane v-for="metric in metrics" :key="metric.type" :label="metric.title" :name="metric.type" />
     </el-tabs>
     <MonitorChartPanel :key="activeTab" :indicator-type="selected.type" :title="selected.title"
@@ -164,4 +170,27 @@ onUnmounted(() => {disposed = true;closeMonitoring();clearInterval(alertTimer);a
 .alert-heading small {font-weight: 400;color: #697987;}
 .el-pagination {margin-top: 14px;max-width: 100%;overflow-x: auto;}
 @media (max-width: 620px) {.monitor-alert-summary {flex-wrap: wrap;} .monitor-alert-copy {flex-basis: calc(100% - 40px);}}
+
+.mobile-metric-picker { display: none; }
+@media (max-width: 767px) {
+  .monitoring-container { padding: 12px; }
+  .monitor-metric-tabs { display: none; }
+  .mobile-metric-picker { display: grid; gap: 6px; }
+  .mobile-metric-picker select {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px;
+    border: 1px solid #dce5ee;
+    border-radius: 6px;
+    background: #fff;
+    color: #24364b;
+    font-size: 16px;
+  }
+  .monitor-alert-summary { flex-wrap: wrap; align-items: flex-start; }
+  .monitor-alert-summary .el-button { margin-inline-start: 30px; min-height: 36px; }
+  .alert-heading > div { display: flex; flex-wrap: wrap; gap: 8px; }
+  .alert-heading .el-button { margin-left: 0; min-height: 36px; }
+  .monitor-alert-records :deep(.el-table__body .cell) { overflow-wrap: anywhere; }
+}
+
 </style>

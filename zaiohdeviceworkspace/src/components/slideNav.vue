@@ -1,5 +1,5 @@
 <template>
-  <aside class="side-shell" :class="{ collapsed: isCollapse }">
+  <aside class="side-shell" :class="{ collapsed: isCollapse, 'side-drawer': mobile }">
     <button type="button" class="side-logo" aria-label="返回首页" @click="goHome">
       <img class="logo-img" src="../assets/img/system-logo.png" alt="在鸿">
       <span class="logo-title">边缘本地控制台</span>
@@ -20,7 +20,7 @@
       >
         <template v-for="item in navList" :key="item.key">
           <el-sub-menu v-if="item.children" :index="item.key" :aria-label="item.label"
-            popper-class="side-video-popup" @click.capture="openOnTouch(item.key)">
+            popper-class="side-video-popup">
             <template #title>
               <svg-icon :icon-class="item.icon" />
               <span>{{ item.label }}</span>
@@ -37,7 +37,7 @@
         </template>
       </el-menu>
     </el-scrollbar>
-    <button type="button" class="side-toggle" @click="isCollapse = !isCollapse"
+    <button v-if="!mobile" type="button" class="side-toggle" @click="isCollapse = !isCollapse"
       :aria-label="isCollapse ? '展开菜单' : '收起菜单'" :aria-expanded="!isCollapse">
       <svg-icon :icon-class="'open'" :class="['toggle-icon', { rotated: isCollapse }]" />
       <span v-if="!isCollapse" class="toggle-text">收起菜单</span>
@@ -52,6 +52,8 @@ const assistantEnabled = process.env.VUE_APP_WORKSPACE_ASSISTANT_ENABLED === 'tr
 
 export default {
   name: 'VlSlide',
+  props: { mobile: Boolean },
+  emits: ['navigate'],
   data() {
     return {
       navList: [
@@ -68,7 +70,7 @@ export default {
         {key: 'password', label: '修改密码', icon: 'xgmm'},
         {key: 'remote', label: '远程桌面', icon: 'yczm'}
       ],
-      isCollapse: window.matchMedia('(max-width: 620px)').matches
+      isCollapse: false
     };
   },
   computed: {
@@ -86,21 +88,19 @@ export default {
     this.openCurrentSection();
   },
   methods: {
-    goHome() { this.$router.push({name: 'home'}); },
+    goHome() {
+      this.$router.push({name: 'home'});
+      this.$emit('navigate');
+    },
     openCurrentSection() {
       if (this.$route.name === 'videoRecognition' && !this.isCollapse) {
         this.$nextTick(() => this.$refs.menu?.open('videoRecognition'));
       }
     },
-    openOnTouch(key) {
-      if (!this.isCollapse || !window.matchMedia('(hover: none)').matches) return;
-      this.isCollapse = false;
-      this.$nextTick(() => this.$refs.menu?.open(key));
-    },
     handleSelect(key) {
       const [name, view] = key.split(':');
       this.$router.push({name, query: view && view !== 'live' ? {view} : {}});
-      if (window.matchMedia('(max-width: 620px)').matches) this.isCollapse = true;
+      this.$emit('navigate');
     }
   }
 };
@@ -258,17 +258,10 @@ export default {
     }
   }
 
-  @media (max-width: 620px) {
-    .side-shell {
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      box-shadow: 3px 0 10px rgb(16 30 46 / 30%);
-    }
-    .side-shell.collapsed {
-      position: relative;
-      box-shadow: none;
-    }
+  @media (max-width: 767px) {
+    .side-shell.side-drawer { width: 100%; }
+    .side-drawer .side-logo { padding: 12px 12px 18px; }
+    .side-drawer .side-menu:not(.el-menu--collapse) { width: 100%; }
+    .side-drawer .el-menu-item, .side-drawer .el-sub-menu__title { min-height: 44px; line-height: 44px; }
   }
 </style>

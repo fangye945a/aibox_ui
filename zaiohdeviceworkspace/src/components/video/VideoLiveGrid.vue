@@ -256,4 +256,15 @@ onUnmounted(() => {
   .preview-toolbar .el-select { flex: 1 1 160px; }
   .empty-tile { min-height: 142px; }
 }
+
+@media (max-width: 767px) {
+  .preview-toolbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .preview-toolbar .el-select { width: 100%; }
+  .preview-toolbar > .el-button { display: none; }
+  .preview-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; background: transparent; border: 0; border-radius: 0; }
+  .preview-grid > :deep(.preview-tile), .empty-tile { border-radius: 8px; }
+  .empty-tile { min-height: 68px; aspect-ratio: auto; }
+  .configure-link { opacity: 1; }
+}
+
 </style>

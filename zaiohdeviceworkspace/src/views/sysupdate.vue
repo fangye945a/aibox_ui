@@ -430,4 +430,13 @@ onBeforeUnmount(() => { disposed = true; pauseUpload(); clearTimeout(timer); wor
     display: none;
   }
 }
+
+@media (max-width: 767px) {
+  .sysup-box { min-height: 0; height: auto; padding: 14px; border-radius: 12px; }
+  .up-box-center { padding: 10px; text-align: center; }
+  .up-con { padding: 12px; }
+  .up-con-row { gap: 8px; }
+  .up-actions .el-button { min-height: 40px; }
+}
+
 </style>

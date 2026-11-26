@@ -119,4 +119,24 @@ const rsaEncrypt = data => data;
   }
 
  }
+
+@media (max-width: 767px) {
+  .loginMain {
+    background-position: center;
+    background-size: cover;
+    overflow-y: auto;
+    padding: 18px;
+    .loginContent { width: min(100%, 460px); margin: auto; }
+    .loginCon {
+      float: none;
+      width: 100%;
+      height: auto;
+      padding: 24px 20px;
+      border-radius: 12px;
+    }
+    input { font-size: 16px; }
+  }
+  #app .loginMain .loginCon .tit { font-size: 21px; padding-bottom: 20px; }
+}
+
 </style>

@@ -1,6 +1,10 @@
 <template>
   <div class="vl-header flex-between">
     <div class="page-heading">
+      <button v-if="compact" type="button" class="mobile-menu-button" aria-label="打开导航菜单"
+        aria-haspopup="dialog" :aria-expanded="navigationOpen" @click="$emit('open-navigation')">
+        <el-icon><MenuIcon /></el-icon>
+      </button>
       <h1 id="workspace-page-title" class="page-title">{{ pageTitle }}</h1>
     </div>
     <div class='headTxt cursor'>
@@ -13,9 +17,13 @@
   </div>
 </template>
 <script>
+import { Menu as MenuIcon } from '@element-plus/icons-vue';
 import { videoView } from '@/router/videoViews';
 
 export default {
+  components: { MenuIcon },
+  props: { compact: Boolean, navigationOpen: Boolean },
+  emits: ['open-navigation'],
   computed: {
     pageTitle() {
       if (this.$route.name === 'videoRecognition') return videoView(this.$route.query.view).label;
@@ -98,9 +106,24 @@ export default {
     line-height: 1;
   }
 }
-@media (max-width: 620px) {
+@media (max-width: 767px) {
   .vl-header {
-    .page-heading { padding: 0 12px; }
+    .page-heading { padding: 0 8px; gap: 6px; }
+    .mobile-menu-button {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: #2b4059;
+      font-size: 22px;
+      cursor: pointer;
+    }
+    .mobile-menu-button:focus-visible { outline: 2px solid #007cf7; outline-offset: -2px; }
+    .logout-btn { min-height: 44px; }
     .headTxt { padding-right: 8px; }
     .userPhoto { display: none; }
   }

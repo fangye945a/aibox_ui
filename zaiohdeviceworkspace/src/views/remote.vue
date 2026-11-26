@@ -341,4 +341,14 @@ onUnmounted(() => { disconnectRemoteDesktop(); });
   padding: 10px 0;
 }
 
+
+@media (max-width: 767px) {
+  .remote-box { min-height: 0; padding: 12px; }
+  .remote-box-top, .connection-status, .connection-info { flex-wrap: wrap; gap: 8px; }
+  .remote-box-top > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; }
+  .remote-box-top .el-button { margin-left: 0; min-height: 40px; }
+  .connection-status { align-items: flex-start; padding: 10px; }
+  .desktop-viewer { min-height: 330px; height: 64vh; height: 64dvh; margin-bottom: 0; }
+}
+
 </style>
