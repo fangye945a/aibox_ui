@@ -68,7 +68,7 @@ function loadWorkspace() {
   if (workspace) return workspace;
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (saved?.channels?.length && saved?.models?.length) {
+    if (Array.isArray(saved?.channels) && Array.isArray(saved?.models) && saved?.diagnostics) {
       workspace = saved;
     }
   } catch {
@@ -128,8 +128,8 @@ export function demoVideoWorkspace() {
   return clone(loadWorkspace());
 }
 
-export function demoVideoFrames() {
-  const state = demoVideoWorkspace();
+/** @brief 提供事件与模拟预览共享的画面识别信息。 */
+export function demoVideoFrames(state = loadWorkspace()) {
   const now = Date.now();
   const frames = {};
   for (const [index, channel] of state.channels.entries()) {
@@ -137,29 +137,32 @@ export function demoVideoFrames() {
     if (!diagnostic.active) continue;
     const dx = Math.round((Math.sin(now / 2800 + index) + 1) * 18);
     const dy = Math.round((Math.cos(now / 3500 + index) + 1) * 5);
-    const detections = [{
-      class: 'person', confidence: 0.91 - index * 0.035, model: channel.models[0]?.id,
-      box: [105 + dx + index * 22, 82 + dy, 292 + dx + index * 22, 326 + dy],
-    }];
-    if (index === 3) {
-      detections.push({
-        class: index % 2 ? 'no-helmet' : 'helmet', confidence: 0.86,
-        model: channel.models[0]?.id, box: [342 + dx, 128 + dy, 446 + dx, 285 + dy],
-      });
-    }
+    const detections = channel.models.flatMap((settings, modelIndex) => {
+      const model = state.models.find(item => item.id === settings.id);
+      if (!model) {
+        return [];
+      }
+      return model.labels.map((label, labelIndex) => {
+        const offset = (modelIndex * 32 + labelIndex * 106 + index * 22) % 300;
+        return {
+          class: label, confidence: 0.92 - labelIndex * 0.06,
+          model: model.id, box: [105 + dx + offset, 82 + dy + labelIndex * 8, 285 + dx + offset, 320 + dy],
+        };
+      }).filter(item => item.confidence >= settings.confidence);
+    });
     frames[channel.id] = {
       sequence: Math.floor((now - STARTED_AT) / 90),
       ptsMs: now - STARTED_AT,
       width: 640,
       height: 360,
-      annotated: false,
+      annotated: true,
       detections,
     };
   }
   return frames;
 }
 
-/** @brief 生成带设备场景的 SVG，供 Pages 版静态预览使用，不连接本机摄像头。 */
+/** @brief 生成模拟场景背景，供浏览器合成预览画面。 */
 export function demoVideoScene(channel) {
   const palette = [
     ['#17324d', '#315d77'], ['#3e3230', '#8b6947'],
@@ -180,14 +183,18 @@ let generatedRecords;
 function records() {
   if (generatedRecords) return generatedRecords;
   const now = Date.now();
+  const channels = loadWorkspace().channels.filter(channel => channel.models?.length);
+  if (!channels.length) {
+    return [];
+  }
   generatedRecords = Array.from({ length: 12 }, (_, index) => {
-    const channel = loadWorkspace().channels[index % loadWorkspace().channels.length];
+    const channel = channels[index % channels.length];
     const model = channel.models[0].id;
     const capturedAt = new Date(now - index * 47000).toISOString();
     return {
       id: String(now - index * 47000), channel: channel.id, model,
       sequence: 8460 - index * 31, capturedAt,
-      ptsMs: now - index * 47000, width: 640, height: 360, annotated: false,
+      ptsMs: now - index * 47000, width: 640, height: 360, annotated: true,
       detections: [{
         class: 'person', confidence: 0.94 - index * 0.01, model,
         box: [124 + index * 7, 88, 304 + index * 7, 326],
@@ -198,12 +205,12 @@ function records() {
 }
 
 function snapshotSvg(record) {
-  const boxes = record.detections.map((item, index) => {
+  const boxes = record.detections.map(item => {
     const [x1, y1, x2, y2] = item.box;
-    const color = item.class === 'no-helmet' ? '#ffbf47' : '#36e0b0';
+    const color = item.class === 'helmet' || item.class === 'no-helmet' ? '#ffbf47' : '#36e0b0';
     return `<g><rect x="${x1}" y="${y1}" width="${x2 - x1}" height="${y2 - y1}" fill="none" stroke="${color}" stroke-width="4"/>
-      <rect x="${x1}" y="${Math.max(0, y1 - 24)}" width="${Math.max(120, item.class.length * 11 + 66)}" height="24" fill="${color}"/>
-      <text x="${x1 + 6}" y="${Math.max(18, y1 - 7)}" fill="#10212a" font-family="sans-serif" font-size="15">${item.class} ${(item.confidence * 100).toFixed(1)}%</text></g>`;
+      <rect x="${x1}" y="${Math.max(0, y1 - 24)}" width="150" height="24" rx="6" fill="#0c131c" stroke="${color}"/>
+      <text x="${x1 + 6}" y="${Math.max(18, y1 - 7)}" fill="#f7fafc" font-family="sans-serif" font-size="15">${item.class} ${(item.confidence * 100).toFixed(1)}%</text></g>`;
   }).join('');
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><defs><linearGradient id="g"><stop stop-color="#19334b"/><stop offset="1" stop-color="#7c6549"/></linearGradient></defs>
     <rect width="640" height="360" fill="url(#g)"/><path d="M0 274L102 188l96 63 95-103 115 99 100-73 132 114v72H0z" fill="#0b1924" opacity=".7"/>${boxes}
@@ -225,8 +232,8 @@ function findChannel(id) {
 
 /** @brief 模拟真实 /api/video/* 接口，返回值继续经过工作台统一 Axios 拦截器。 */
 export async function demoVideoRequest(path, method, data, config = {}) {
-  const state = updateDiagnostics();
-  if (path === 'workspace' && method === 'GET') return ok(clone(state));
+  const state = loadWorkspace();
+  if (path === 'workspace' && method === 'GET') return ok(demoVideoWorkspace());
   if (path === 'channels' && method === 'PUT') {
     const input = typeof data === 'string' ? JSON.parse(data) : data;
     if (!input?.name || !input.models?.length) return fail('通道名称和检测模型不能为空');

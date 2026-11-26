@@ -1,5 +1,5 @@
 <template>
-  <figure v-if="stream || (frame && image)" class="preview" :class="{ 'preview-fit': fit }">
+  <figure v-if="stream || image" class="preview" :class="{ 'preview-fit': fit }">
     <div class="picture" :style="pictureStyle">
       <img v-if="stream" :src="stream" alt="设备实时预览画面" :class="{ reconnecting }"
         @load="$emit('stream-connected')" @error="$emit('stream-error')">
@@ -11,7 +11,7 @@
         </div>
       </template>
       <div v-if="stream && !frame" class="stream-waiting">正在连接视频流…</div>
-      <div v-if="stream && reconnecting" class="stream-waiting">视频连接中断，正在重连…</div>
+      <div v-if="(stream || image) && reconnecting" class="stream-waiting">视频连接中断，正在重连…</div>
     </div>
     <figcaption v-if="!fit && frame">帧 {{ frame.sequence }} · 源时间 {{ frame.ptsMs }} ms · {{ frame.width }} × {{ frame.height }}</figcaption>
   </figure>
@@ -58,8 +58,21 @@ function position([x1, y1, x2, y2]) {
 .preview-fit .picture { width: min(100%, calc(100cqh * var(--frame-ratio))); }
 .box { position: absolute; border: 2px solid #3af4b8; color: #07201b; }
 .box.hat { border-color: #ffd269; color: #2b1900; }
-.box span { position: absolute; top: 0; left: 0; background: #3af4b8; padding: 1px 4px; font: 600 11px/1.5 sans-serif; white-space: nowrap; }
-.box.hat span { background: #ffd269; }
+.box span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #f7fafc;
+  background: rgb(12 19 28 / 88%);
+  border: 1px solid #3af4b8;
+  border-radius: 6px;
+  padding: 3px 7px;
+  font: 600 11px/1.25 sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 5px 16px rgb(0 0 0 / 24%);
+  backdrop-filter: blur(8px);
+}
+.box.hat span { border-color: #ffd269; }
 .stream-waiting {
   position: absolute;
   inset: 50% auto auto 50%;

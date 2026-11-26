@@ -275,7 +275,8 @@ export class DemoEventSource {
         if (path === '/api/monitoring/stream') {
           this.onmessage?.({ data: JSON.stringify([monitoringSample()]) });
         } else if (path === '/api/video/events') {
-          this.onmessage?.({ data: JSON.stringify({ workspace: demoVideoWorkspace(), frames: demoVideoFrames() }) });
+          const workspace = demoVideoWorkspace();
+          this.onmessage?.({ data: JSON.stringify({ workspace, frames: demoVideoFrames(workspace) }) });
         } else if (parsed.searchParams.get('type') === 'runningStatus') {
           this.onmessage?.({ data: JSON.stringify(runningStatus()) });
         } else if (path === '/api/sse/connect') {

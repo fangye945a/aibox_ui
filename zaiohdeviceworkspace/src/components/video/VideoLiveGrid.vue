@@ -15,8 +15,8 @@
       <VideoLiveTile v-if="channel" v-show="!focused || focused === channel.id" :channel="channel"
         :diagnostic="workspace.diagnostics[channel.id]" :live-frame="frames[channel.id]" :models="workspace.models"
         :busy="busy" :focused="focused === channel.id"
-        :subscribed="(!focused || focused === channel.id) && (!fullscreenChannel || fullscreenChannel === channel.id)"
-        :fullscreen="fullscreenChannel === channel.id" @focus="toggleFocus(channel.id)"
+        :fullscreen="fullscreenChannel === channel.id" :stream-image="streamImages[channel.id] || ''"
+        :stream-retrying="streamRetrying" :stream-error="streamError" @focus="toggleFocus(channel.id)"
         @fullscreen="toggleFullscreen" @control="action => $emit('control', channel.id, action)" />
       <div v-else v-show="!focused" class="empty-tile">
         <router-link class="configure-link" :to="{ name: 'videoRecognition', query: { view: 'settings' } }">
@@ -28,9 +28,12 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue';
 import { FullScreen } from '@element-plus/icons-vue';
 import VideoLiveTile from './VideoLiveTile.vue';
+import { readPreviewMultipart } from './previewMultiplex';
+import { demoEnabled } from '@/demo/data';
+import { OpenDemoPreview } from '@/demo/preview';
 
 const props = defineProps({
   modelValue: { type: Array, required: true },
@@ -42,11 +45,31 @@ const emit = defineEmits(['update:modelValue', 'control', 'error']);
 const grid = ref(null);
 const focused = ref('');
 const fullscreenChannel = ref('');
+const streamImages = shallowRef({});
+const streamRetrying = ref(false);
+const streamError = ref('');
+const imageURLs = new Map();
+let streamController;
+let reconnectTimer;
+let reconnectAttempt = 0;
+let componentMounted = false;
 const slots = computed(() => Array.from({ length: 4 }, (_, index) =>
   props.workspace.channels.find(channel => channel.id === props.modelValue[index]) ?? null));
+const streamMode = computed(() => focused.value || fullscreenChannel.value ? 'focus' : 'grid');
+const streamChannels = computed(() => {
+  let ids = props.modelValue.filter(Boolean);
+  if (focused.value) ids = [focused.value];
+  else if (fullscreenChannel.value) ids = [fullscreenChannel.value];
+  return ids.filter(id => ['running', 'reconnecting'].includes(props.workspace.diagnostics[id]?.state));
+});
+const streamKey = computed(() => streamMode.value + ':' + streamChannels.value.join(','));
 
 watch(() => props.modelValue, ids => {
   if (!ids.includes(focused.value)) focused.value = '';
+});
+
+watch(streamKey, () => {
+  if (componentMounted) connectPreviewStream();
 });
 
 function toggleFocus(id) {
@@ -75,8 +98,110 @@ function updateFullscreen() {
   fullscreenChannel.value = document.fullscreenElement?.dataset.channelId || '';
 }
 
-onMounted(() => document.addEventListener('fullscreenchange', updateFullscreen));
-onUnmounted(() => document.removeEventListener('fullscreenchange', updateFullscreen));
+function releaseImage(channel, delay = 0) {
+  const url = imageURLs.get(channel);
+  if (!url) return;
+  imageURLs.delete(channel);
+  setTimeout(() => URL.revokeObjectURL(url), delay);
+}
+
+function setPreviewImage(channel, jpeg) {
+  releaseImage(channel, 1000);
+  const url = URL.createObjectURL(new Blob([jpeg], { type: 'image/jpeg' }));
+  imageURLs.set(channel, url);
+  streamImages.value = { ...streamImages.value, [channel]: url };
+}
+
+function clearPreviewImages() {
+  for (const channel of [...imageURLs.keys()]) releaseImage(channel);
+  streamImages.value = {};
+}
+
+function closePreviewStream() {
+  clearTimeout(reconnectTimer);
+  reconnectTimer = undefined;
+  streamController?.abort();
+  streamController = undefined;
+}
+
+function schedulePreviewReconnect() {
+  if (!componentMounted || !streamChannels.value.length) return;
+  streamRetrying.value = true;
+  clearTimeout(reconnectTimer);
+  const delay = Math.min(8000, 500 * (2 ** reconnectAttempt));
+  reconnectAttempt += 1;
+  reconnectTimer = setTimeout(connectPreviewStream, delay);
+}
+
+async function connectPreviewStream() {
+  closePreviewStream();
+  if (!componentMounted) return;
+  const ids = streamChannels.value;
+  streamImages.value = Object.fromEntries(Object.entries(streamImages.value).filter(([id]) => ids.includes(id)));
+  for (const id of imageURLs.keys()) {
+    if (!ids.includes(id)) {
+      releaseImage(id);
+    }
+  }
+  if (!ids.length) {
+    streamRetrying.value = false;
+    streamError.value = '';
+    return;
+  }
+  const token = localStorage.getItem('loginToken');
+  if (!token) return;
+  const controller = new AbortController();
+  streamController = controller;
+  streamRetrying.value = false;
+  streamError.value = '';
+  const query = new URLSearchParams({
+    channels: ids.join(','), mode: streamMode.value, fps: streamMode.value === 'grid' ? '8' : '12'
+  });
+  try {
+    const requestPreview = demoEnabled ? OpenDemoPreview : fetch;
+    const response = await requestPreview('/api/video/preview.stream?' + query, {
+      headers: { Authorization: 'Bearer ' + token }, cache: 'no-store', signal: controller.signal
+    });
+    if (!response.ok) {
+      let message = '视频预览连接失败';
+      try {
+        const payload = await response.json();
+        message = payload.error || payload.msg || message;
+      } catch {
+        // 服务端未返回 JSON 时保留默认提示。
+      }
+      throw new Error(message);
+    }
+    let receivedFrame = false;
+    await readPreviewMultipart(response, (headers, jpeg) => {
+      if (controller.signal.aborted || !ids.includes(headers['x-frame-channel'])) {
+        return;
+      }
+      if (!receivedFrame) {
+        receivedFrame = true;
+        reconnectAttempt = 0;
+      }
+      setPreviewImage(headers['x-frame-channel'], jpeg);
+    }, controller.signal);
+    if (!controller.signal.aborted) throw new Error('视频预览连接已结束');
+  } catch (problem) {
+    if (controller.signal.aborted || !componentMounted) return;
+    streamError.value = problem.message || '视频预览连接失败';
+    schedulePreviewReconnect();
+  }
+}
+
+onMounted(() => {
+  componentMounted = true;
+  document.addEventListener('fullscreenchange', updateFullscreen);
+  connectPreviewStream();
+});
+onUnmounted(() => {
+  componentMounted = false;
+  document.removeEventListener('fullscreenchange', updateFullscreen);
+  closePreviewStream();
+  clearPreviewImages();
+});
 </script>
 
 <style scoped>

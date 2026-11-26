@@ -147,7 +147,7 @@
     </div>
 
     <div v-else class="panel">
-      <p>帧率均取最近 5 秒。总推理耗时包含前处理、NPU 推理和后处理；预览编码单独统计，显示画面以 480p 编码，以减少 CPU 抢占并提高分析吞吐。</p>
+      <p>帧率均取最近 5 秒。总推理耗时包含前处理、NPU 推理和后处理；预览编码单独统计。四宫格最高 960 宽，单路及 APP 最高 1920 宽；检测截图独立按源分辨率编码，最高 2560 宽。无人观看时停止预览编码，因此不会占用分析吞吐。 {{ demoEnabled ? '演示使用模拟画面和诊断数据。' : '' }}</p>
       <div class="diagnostics-table">
       <table><thead><tr><th>通道</th><th>运行状态</th><th>预览 FPS</th><th>分析 FPS</th><th>推理帧数</th><th>跳过帧数</th><th>总推理</th><th>NPU 推理</th><th>前处理</th><th>后处理</th><th>预览编码</th><th>重连次数</th><th>错误</th></tr></thead>
         <tbody><tr v-for="channel in workspace.channels" :key="channel.id">

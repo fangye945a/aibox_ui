@@ -1,9 +1,8 @@
 <template>
   <article ref="tile" class="preview-tile" :class="{ 'is-focused': focused }" :data-channel-id="channel.id"
     :aria-label="channel.name" @dblclick="!fullscreen && $emit('focus')">
-    <FramePreview :frame="frame" :stream="streamUrl" :reconnecting="streamRetrying"
-      :empty-text="previewError || diagnostic?.error || stateLabel(diagnostic?.state)" fit
-      @stream-connected="handleStreamConnected" @stream-error="scheduleStreamReconnect" />
+    <FramePreview :frame="frame" :image="streamImage" :reconnecting="streamRetrying"
+      :empty-text="streamError || diagnostic?.error || stateLabel(diagnostic?.state)" fit />
     <div class="tile-header" @dblclick.stop>
       <div class="tile-name">
         <strong :title="channel.name">{{ channel.name }}</strong>
@@ -39,12 +38,10 @@
 </template>
 
 <script setup>
-import { computed, onUnmounted, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { FullScreen } from '@element-plus/icons-vue';
 import FramePreview from './FramePreview.vue';
 import { active, fps, stateLabel } from './videoStatus';
-import { demoEnabled } from '@/demo/data';
-import { demoVideoScene } from '@/demo/video';
 
 const props = defineProps({
   channel: { type: Object, required: true },
@@ -53,72 +50,17 @@ const props = defineProps({
   models: { type: Array, required: true },
   busy: Boolean,
   focused: Boolean,
-  subscribed: Boolean,
   fullscreen: Boolean,
+  streamImage: { type: String, default: '' },
+  streamRetrying: Boolean,
+  streamError: { type: String, default: '' },
 });
 defineEmits(['control', 'focus', 'fullscreen']);
 
 const tile = ref(null);
 const frame = computed(() => props.liveFrame || null);
-const streamUrl = ref('');
-const streamRetrying = ref(false);
-const previewError = ref('');
 const showDetails = ref(false);
 const modelName = id => props.models.find(model => model.id === id)?.name || id;
-let reconnectTimer;
-let reconnectAttempt = 0;
-
-function streamPath() {
-  if (demoEnabled) return demoVideoScene(props.channel);
-  const query = new URLSearchParams({ fps: '12', stream: String(Date.now()) });
-  return '/api/video/channels/' + encodeURIComponent(props.channel.id) + '/preview.mjpeg?' + query;
-}
-
-function connectStream() {
-  clearTimeout(reconnectTimer);
-  reconnectTimer = undefined;
-  streamUrl.value = streamPath();
-}
-
-function closeStream() {
-  clearTimeout(reconnectTimer);
-  reconnectTimer = undefined;
-  streamUrl.value = '';
-  streamRetrying.value = false;
-}
-
-function handleStreamConnected() {
-  reconnectAttempt = 0;
-  streamRetrying.value = false;
-  previewError.value = '';
-}
-
-function scheduleStreamReconnect() {
-  if (!props.subscribed || !['running', 'reconnecting', 'ended'].includes(props.diagnostic?.state)) return;
-  streamRetrying.value = true;
-  previewError.value = '视频连接中断，正在重连';
-  clearTimeout(reconnectTimer);
-  const delay = Math.min(8000, 500 * (2 ** reconnectAttempt));
-  reconnectAttempt += 1;
-  reconnectTimer = setTimeout(connectStream, delay);
-}
-
-watch(() => props.channel.id, () => {
-  closeStream();
-});
-
-watch([() => props.subscribed, () => props.diagnostic?.state], ([subscribed, state]) => {
-  if (!subscribed || !['running', 'reconnecting', 'ended'].includes(state)) {
-    closeStream();
-    return;
-  }
-  previewError.value = '';
-  connectStream();
-}, { immediate: true });
-
-onUnmounted(() => {
-  closeStream();
-});
 </script>
 
 <style scoped>
@@ -153,18 +95,31 @@ onUnmounted(() => {
   max-width: calc(100% - 16px);
   max-height: min(220px, 50%);
   overflow: auto;
-  background: rgb(14 22 33 / 93%);
-  padding: 10px;
-  border-radius: 5px;
+  background: linear-gradient(145deg, rgb(17 27 41 / 91%), rgb(7 14 24 / 88%));
+  border: 1px solid rgb(135 166 198 / 24%);
+  box-shadow: 0 14px 38px rgb(0 0 0 / 32%), inset 0 1px rgb(255 255 255 / 8%);
+  backdrop-filter: blur(14px) saturate(125%);
+  padding: 12px 14px;
+  border-radius: 12px;
 }
-.tile-details ul { margin: 6px 0 0; padding-inline-start: 18px; }
-.tile-details p { margin: 6px 0 0; }
-.tile-name, .tile-status, .tile-action { background: rgb(14 22 33 / 85%); border-radius: 5px; color: #fff; }
+.tile-details strong { display: block; margin-bottom: 4px; color: #f7fafc; font-size: 12px; letter-spacing: .02em; }
+.tile-details ul { margin: 7px 0 0; padding: 0; list-style: none; display: grid; gap: 5px; }
+.tile-details li { padding-left: 13px; position: relative; color: #dce8f5; font-size: 12px; line-height: 1.45; }
+.tile-details li::before { content: ''; position: absolute; left: 2px; top: .58em; width: 4px; height: 4px; border-radius: 50%; background: #3ce2aa; box-shadow: 0 0 0 3px rgb(60 226 170 / 10%); }
+.tile-details p { margin: 7px 0 0; color: #b9c8d8; font-size: 12px; }
+.tile-name, .tile-status, .tile-action {
+  background: rgb(9 17 28 / 78%);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 8px;
+  box-shadow: 0 5px 16px rgb(0 0 0 / 18%);
+  color: #fff;
+  backdrop-filter: blur(10px);
+}
 .tile-name, .tile-status { padding: 5px 7px; font-size: 12px; min-width: 0; }
 .tile-name { display: grid; gap: 2px; }
 .tile-name strong, .tile-name small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tile-name small { color: #c9d5e2; }
-.tile-action { pointer-events: auto; border: 1px solid #8392a4; padding: 5px 7px; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.tile-action { pointer-events: auto; padding: 5px 8px; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
 .tile-action:disabled { opacity: .6; cursor: default; }
 .fullscreen-action { display: grid; place-items: center; width: 34px; height: 34px; font-size: 17px; }
 @media (max-width: 620px) {
