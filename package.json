@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.2.0",
   "type": "module",
-  "description": "边缘本地控制台 - React 19 重构版",
+  "description": "CT23/CT21B 设备工作台与 GitHub Pages 交互原型",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

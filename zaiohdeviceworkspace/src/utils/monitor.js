@@ -1,23 +1,23 @@
-// 后端每5秒采样；超过15秒视为缺采，不补零、不跨缺口推断持续时间。
-export const SAMPLE_MS = 5000;
-export const GAP_MS = 15000;
+// 后端每秒采样；超过3秒视为缺采，不跨缺口推断持续时间。
+export const SAMPLE_MS = 1000;
+export const GAP_MS = 3000;
 
-export function normalizePoints(items) {
+export function normalizePoints(items, minimum = 0) {
   const values = new Map();
   for (const item of Array.isArray(items) ? items : []) {
-    const time = Date.parse(item?.time);
+    const time = typeof item?.time === 'number' ? item.time : Date.parse(item?.time);
     if (Number.isFinite(time) && typeof item?.value === 'number' &&
-        Number.isFinite(item.value) && item.value >= 0) {
+        Number.isFinite(item.value) && item.value >= minimum) {
       values.set(time, item.value);
     }
   }
   return [...values].sort((a, b) => a[0] - b[0]);
 }
 
-export function chartPoints(points) {
+export function chartPoints(points, gapMs = GAP_MS) {
   const result = [];
   points.forEach((point, index) => {
-    if (index && point[0] - points[index - 1][0] > GAP_MS) {
+    if (index && point[0] - points[index - 1][0] > gapMs) {
       result.push([points[index - 1][0] + SAMPLE_MS, null]);
     }
     result.push(point);
@@ -25,7 +25,7 @@ export function chartPoints(points) {
   return result;
 }
 
-export function summarize(points, threshold) {
+export function summarize(points, threshold, gapMs = GAP_MS) {
   const stats = {
     current: null, average: null, peak: null, peakAt: null,
     highSeconds: 0, longestHighSeconds: 0, coveredSeconds: 0, gaps: 0
@@ -41,7 +41,7 @@ export function summarize(points, threshold) {
     }
     if (index) {
       const elapsed = time - points[index - 1][0];
-      if (elapsed > GAP_MS) {
+      if (elapsed > gapMs) {
         stats.gaps++;
         highRun = 0;
       } else {
@@ -60,8 +60,9 @@ export function summarize(points, threshold) {
   return stats;
 }
 
-export function formatMetric(value, percent) {
+export function formatMetric(value, percent, unit) {
   if (value === null || !Number.isFinite(value)) return '--';
+  if (unit === '°C') return `${value.toFixed(1)} °C`;
   if (percent) return `${value.toFixed(1)}%`;
   if (value >= 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(2)} GiB/s`;
   if (value >= 1024) return `${(value / 1024).toFixed(2)} MiB/s`;

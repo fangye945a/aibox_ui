@@ -1,7 +1,7 @@
 <template>
   <div class="search-box">
     <p class="title"><span v-if="isBack" @click="goBack"><el-icon><Back /></el-icon>返回</span>{{title}}</p>
-    
+
     <div v-if="searchCon.queryParams" class="searchCon">
       <!-- <el-form ref='froms' :model='curForm'> -->
        <template v-for='(item,i) in searchCon.queryParams' :key='i'>
@@ -14,7 +14,7 @@
                           :value="item.options?obj[item.options.value]:obj.value"> </el-option>
               </el-select>
               <el-input v-else-if="item.type=='text'"  class="margin-r-10" clearable
-             style='width:140px' 
+             style='width:140px'
             :placeholder="item.note" v-model="curForm[item.label]">
            </el-input>
            <el-date-picker v-else-if="item.type=='daterange'"  class="margin-r-10" :clearable='false' style="vertical-align:bottom"
@@ -22,13 +22,13 @@
             type="daterange"
             range-separator="-"
             start-placeholder="请选择日期" end-placeholder="请选择日期" value-format="YYYY-MM-DD"
-            
+
           />
           <el-date-picker v-else-if="item.type=='date'"  class="margin-r-10"  style="vertical-align:bottom"
             v-model="curForm[item.label]"
-            type="date" 
+            type="date"
             placeholder="请选择日期" value-format="YYYY-MM-DD"
-            
+
           />
           <slot v-else-if="item.type==='temp'" :name="item.label"></slot>
        </template>
@@ -62,7 +62,7 @@ const props = defineProps({
     }
 })
 const curForm = reactive({
-  
+
 })
 const router=useRouter()
 const goBack=()=>{
@@ -78,11 +78,11 @@ const init = (str) => {
               }else{//赋值
                  curForm[item.label] = item.value||'';
               }
-                
-            
+
+
             });
         }
-        
+
  }
 
 
@@ -98,7 +98,7 @@ init()
 
 defineExpose({curForm})
 
- 
+
 </script>
 <style lang="scss">
   .search-box {
@@ -107,13 +107,11 @@ defineExpose({curForm})
     color:#000;
     margin-bottom: 10px;
     .title{
-      font-size: 17px;
-      padding-bottom: 12px;
-      margin-bottom: 14px;
-      border-bottom: 1px solid #EEE;
+      font-size: 18px;
+      // border-bottom: 1px solid rgba(0,0,0,0.1);
+      padding-bottom: 16px;
       font-weight: 600;
-      color: rgba(0,0,0,0.9);
-      line-height: 1.4;
+      color:rgba(0,0,0,.9);
       span{
         padding-right:20px;
         margin-right: 20px;

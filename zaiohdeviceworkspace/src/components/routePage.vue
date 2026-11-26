@@ -9,7 +9,6 @@
 </template>
 
 <script>
-import { storage } from '@/demo/storage';
   import { logout } from "@/api/api.common";
 export default {
   name: "routePage",
@@ -24,7 +23,7 @@ export default {
   },
   mounted() {
     this.redirectUrl = this.$route.query.redirect||'home';
-    this.loginToken =  storage.getItem('loginToken');
+    this.loginToken =  window.localStorage.loginToken;
 
     // 清除url传参 因为走登录是用的url，但又不能丢失参数，跳路由用的query
   //   let url = window.location.href.split('?')[0] + '?';
@@ -42,9 +41,9 @@ export default {
   methods: {
     todoInit() {
       this.type =  this.$route.query.pageType|| 'CHECK_LOGIN';
-       
+
       switch (this.type) {
-       
+
         case 'NO_AUTH':// 无权限访问当前接口
           this.noAuthHandle();
         break;
@@ -68,7 +67,7 @@ export default {
         this.$router.push({name: this.redirectUrl});
       } else {
         this.toDoLogin();
-        
+
       }
     },
     // 无权限
@@ -86,13 +85,13 @@ export default {
 
     },
     // 登出
-    async toDoLogout() { 
+    async toDoLogout() {
       try { await logout(); } catch { /* 会话失效也清理本地登录状态。 */ }
       this.toDoLogin();
-      storage.removeItem('loginToken');
-      storage.removeItem('isFirst');
-      
-    
+      localStorage.removeItem('loginToken');
+      localStorage.removeItem('isFirst');
+
+
     }
   },
   watch:{

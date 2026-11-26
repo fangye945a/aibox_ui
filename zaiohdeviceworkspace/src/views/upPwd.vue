@@ -16,14 +16,13 @@
           <span class="dialog-footer">
             <el-button v-if="showNeverRemind" @click="handleNeverRemind">不再提醒</el-button>
             <el-button @click="handleCancel">取消</el-button>
-            <el-button type="primary" :loading="saving" @click="submitForm">保存</el-button>
+            <el-button type="primary" @click="submitForm">保存</el-button>
           </span>
         </template>
       </el-dialog>
     </div>
 </template>
 <script setup>
-import { storage } from '@/demo/storage';
 import { changePwd } from "@/api/api.common";
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router';
@@ -33,7 +32,6 @@ const props = defineProps({
 });
 const router = useRouter();
 const dialogVisible = ref(false)
-const saving = ref(false);
 const resetForm = () => {
   formRef.value?.resetFields();
 };
@@ -47,7 +45,7 @@ const handleClose = () => {
     emit('close')
 }
 const handleNeverRemind = () => {
-    storage.setItem('defaultPasswordPromptDisabled', 'true');
+    localStorage.setItem('defaultPasswordPromptDisabled', 'true');
     dialogVisible.value = false;
     resetForm();
     emit('never-remind');
@@ -66,7 +64,7 @@ var pass1=(rules,value,callback)=>{
             }else if(value.length<8){
               callback(new Error('密码长度至少8位'));
             }else{
-              
+
               if(form.checkPwd!==''){
               formRef.value.validateField('checkPwd');
               }
@@ -81,7 +79,7 @@ var pass2=(rules,value,callback)=>{
           }else{
             callback();
           }
-} 
+}
 const form=reactive({
                     current_password:'',
                     new_password:'',
@@ -97,32 +95,33 @@ const  rules={
     checkPwd:[
         {required: true,validator:pass2,trigger:'blur'}
     ]
-}  
+}
 
 //加密
 const rsaEncrypt = data => data;
 
-async function submitForm() {
-  if (saving.value || !formRef.value) {
-    return;
-  }
-  saving.value = true;
-  try {
-    await formRef.value.validate();
-    await changePwd({
-      current_password: rsaEncrypt(props.currentPassword || form.current_password),
-      new_password: rsaEncrypt(form.new_password)
-    });
-    ElMessage.success('演示密码修改成功，请用新密码登录');
-    dialogVisible.value = false;
-    resetForm();
-    storage.removeItem('loginToken');
-    await router.replace({name: 'login'});
-  } catch {
-    // 校验和接口分别显示错误。
-  } finally {
-    saving.value = false;
-  }
+const submitForm=()=>{
+    if (props.currentPassword) {
+      form.current_password = props.currentPassword;
+    }
+    formRef.value.validate((valid) => {
+        if(valid){
+        let params={
+          current_password:rsaEncrypt(form.current_password),
+          new_password:rsaEncrypt(form.new_password)
+        }
+
+        changePwd(params).then((data)=>{
+            ElMessage.success('修改成功')
+            dialogVisible.value = false
+            resetForm()
+            emit('close')
+            localStorage.removeItem('loginToken');
+            router.replace({name: 'login'});
+        })
+
+        }else{ }
+    })
 }
 const emit = defineEmits(['close', 'never-remind'])
 defineExpose({

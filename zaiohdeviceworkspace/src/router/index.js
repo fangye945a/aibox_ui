@@ -1,7 +1,9 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import store from '@/store/';
-import { demoFetch } from '@/demo/data';
-import { storage } from '@/demo/storage';
+import { demoEnabled, demoFetch } from '@/demo/data';
+
+const videoEnabled = process.env.VUE_APP_WORKSPACE_VIDEO_ENABLED === 'true'
+const assistantEnabled = process.env.VUE_APP_WORKSPACE_ASSISTANT_ENABLED === 'true'
 
 const routes = [
     // {
@@ -24,6 +26,7 @@ const routes = [
         name: 'home'
       },
       children: [
+        //首页
         {
           path: '/home',
           name: 'home',
@@ -32,12 +35,6 @@ const routes = [
             title: '首页',
             unRequireLogin: false,
           }
-        },
-        {
-          path: '/assistant',
-          name: 'assistant',
-          component: () => import('@/views/deviceAssistant.vue'),
-          meta: { title: '智能问答', unRequireLogin: false },
         },
         //监控运维
         {
@@ -49,12 +46,18 @@ const routes = [
             unRequireLogin: false,
           }
         },
-        {
-          path: '/video-recognition',
+        ...(videoEnabled ? [{
+          path: '/video',
           name: 'videoRecognition',
           component: () => import('@/views/videoRecognition.vue'),
           meta: { title: '视频分析', unRequireLogin: false }
-        },
+        }] : []),
+        ...(assistantEnabled ? [{
+          path: '/assistant',
+          name: 'assistant',
+          component: () => import('@/views/deviceAssistant.vue'),
+          meta: { title: '智能问答', unRequireLogin: false }
+        }] : []),
         //日志
         {
           path: '/log',
@@ -81,7 +84,7 @@ const routes = [
           name: 'remote',
           component: () => import('@/views/remote.vue'),
           meta: {
-            title: '远程桌面',
+            title: '远程操控',
             unRequireLogin: false,
           }
         },
@@ -123,19 +126,20 @@ const router = createRouter({
   routes
 })
 const clearSession = () => {
-  storage.removeItem('loginToken');
-  storage.removeItem('isFirst');
+  localStorage.removeItem('loginToken');
+  localStorage.removeItem('isFirst');
 };
 
 let sessionValidation = null;
 
 const isSessionValid = async () => {
-  const token = storage.getItem('loginToken');
+  const token = localStorage.getItem('loginToken');
   if (!token) {
     return false;
   }
   if (!sessionValidation) {
-    sessionValidation = demoFetch('/api/auth/status', {
+    const request = demoEnabled ? demoFetch : fetch;
+    sessionValidation = request('/api/auth/status', {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store'
     }).then(async response => {
@@ -153,7 +157,7 @@ const isSessionValid = async () => {
 
 router.beforeEach(async (to, from, next) => {
   document.title ='边缘本地控制台';// to.meta.title;
-  let tokens= storage.getItem('loginToken')
+  let tokens= localStorage.loginToken
   // 无需鉴权跟已登录直接放行
   let unRequireLogin = to.meta && to.meta.unRequireLogin;
   if (unRequireLogin) {

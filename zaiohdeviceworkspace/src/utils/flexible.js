@@ -2,15 +2,7 @@
   var docEl = document.documentElement;
   var dpr = window.devicePixelRatio || 1;
 
-  // adjust body font size
-  function setBodyFontSize() {
-    if (document.body) {
-      document.body.style.fontSize = 12 * dpr + "px";
-    } else {
-      document.addEventListener("DOMContentLoaded", setBodyFontSize);
-    }
-  }
-  setBodyFontSize();
+  // 正文字号由全局排版控制，不随设备像素比变化。
 
   // set 1rem = viewWidth / 10
   function setRemUnit() {

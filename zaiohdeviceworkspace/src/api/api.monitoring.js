@@ -12,14 +12,7 @@ export function pageListUserListByCondition(data) {
   })
 }
 
-// 获取控制器基本信息
-export function getMnitoring(params, signal) {
-  return request({
-    url: '/api/monitoring/data',
-    method: 'get',
-    mode,
-    params,
-    signal,
-    silentError: true
-  })
-}
+export const getMonitorAlerts = (page, signal) => request({
+  url: '/api/monitoring/alerts', params: {page}, signal, silentError: true
+});
+export const clearMonitorAlerts = () => request({url: '/api/monitoring/alerts', method: 'DELETE'});

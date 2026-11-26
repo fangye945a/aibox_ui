@@ -4,7 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 (async () => {
-  const source = fs.readFileSync(path.join(__dirname, '../src/utils/session-watch.js'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '../src/utils/session-watch.js'), 'utf8')
+    .replace("import { demoEnabled, demoFetch } from '@/demo/data';", "const demoEnabled = false; const demoFetch = (...args) => global.fetch(...args);");
   const { startSessionWatch } = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
   const intervals = new Map();
   const timeouts = new Map();

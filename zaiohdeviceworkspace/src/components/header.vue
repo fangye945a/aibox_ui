@@ -1,8 +1,7 @@
 <template>
   <div class="vl-header flex-between">
     <div class="page-heading">
-      <h1 class="page-title">{{ pageTitle }}</h1>
-      <el-tag v-if="isMockPage" type="info" effect="plain" size="small">模拟演示</el-tag>
+      <h1 id="workspace-page-title" class="page-title">{{ pageTitle }}</h1>
     </div>
     <div class='headTxt cursor'>
       <el-avatar :size="35" :src="require('@/assets/img/peo.png')" class="userPhoto"></el-avatar>
@@ -14,25 +13,14 @@
   </div>
 </template>
 <script>
-const g_videoTitles = {
-  records: '检测记录',
-  settings: '通道配置',
-  models: '模型管理',
-  diagnostics: '视频诊断',
-};
+import { videoView } from '@/router/videoViews';
 
 export default {
   computed: {
     pageTitle() {
-      if (this.$route.name === 'videoRecognition') {
-        const view = this.$route.query.view;
-        return typeof view === 'string' && Object.hasOwn(g_videoTitles, view) ? g_videoTitles[view] : '实时检测';
-      }
+      if (this.$route.name === 'videoRecognition') return videoView(this.$route.query.view).label;
       return this.$route.meta.title || '边缘本地控制台';
-    },
-    isMockPage() {
-      return ['monitoring', 'videoRecognition'].includes(this.$route.name);
-    },
+    }
   },
   data () {
     return {
@@ -59,7 +47,6 @@ export default {
     gap: 8px;
     min-width: 0;
     padding: 0 24px;
-    .el-tag { flex-shrink: 0; }
   }
   .page-title {
     margin: 0;

@@ -24,7 +24,7 @@
                   <template v-else>{{row[item.value]}}</template>
                 </template>
             </template>
-        </el-table-column> 
+        </el-table-column>
     </template>
     <slot></slot>
   </el-table>
@@ -97,7 +97,7 @@ import commonPagination from '@/components/commonPagination.vue';
     defineExpose({pagination,selectList})
     //初始化
     init()
-   
+
    watch(props.tableData,(news)=>{
     if(news){
       init()
@@ -127,10 +127,10 @@ import commonPagination from '@/components/commonPagination.vue';
       padding:8px 0px;
       background: rgba(0, 124, 247, 0.05);
       color:rgba(0, 0, 0, 0.9);
-      
+
     }
   }
- 
+
   .tableText{
     color:#007CF7;
     width: 80%;
@@ -139,5 +139,5 @@ import commonPagination from '@/components/commonPagination.vue';
     white-space: nowrap;
     cursor: pointer;
   }
-} 
+}
 </style>

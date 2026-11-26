@@ -6,6 +6,7 @@ import store from "@/store";
 import ElementPlus from 'element-plus'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import 'element-plus/dist/index.css'
+import '@/assets/css/typography.css'
 
 // 虚拟滚动
 import VueVirtualScroller from 'vue-virtual-scroller'
@@ -13,7 +14,7 @@ import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 
 
 // pc适配rem方案
-import "@/utils/flexible.js"; 
+import "@/utils/flexible.js";
 
 
 //引入svg组件

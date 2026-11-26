@@ -13,7 +13,7 @@ const { ElementPlusResolver } = require('unplugin-vue-components/resolvers')
 const CompressionPlugin = require('compression-webpack-plugin')
 // vue.config.js
 module.exports = defineConfig({
-  
+
   publicPath:'./',
   outputDir: 'dist',
   filenameHashing: true,
@@ -22,6 +22,14 @@ module.exports = defineConfig({
     port: 9101,
     hot: true,          // 开启热更新
     open:false,
+    proxy: {
+      "/api": {
+        target:process.env.VUE_APP_BASE_URL,// "http://192.168.214.189:5000",
+        changeOrigin: true,
+
+      },
+
+    },
     client:{
       overlay: false
     }
@@ -36,7 +44,7 @@ module.exports = defineConfig({
         sass: {
           additionalData: `
                   @import "@/assets/css/style.scss";
-                 
+
                 `
         }
       }
@@ -89,5 +97,5 @@ module.exports = defineConfig({
         })
         .end()
   }
-  
+
 })

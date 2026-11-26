@@ -1,0 +1,348 @@
+/* 字体与排版层级取自AI Box原型，统一页面文字及Element Plus控件。 */
+:root {
+  --workspace-font: "Microsoft YaHei", "微软雅黑", "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", Arial, sans-serif;
+  --workspace-text: rgba(0, 0, 0, .75);
+  --workspace-title: rgba(0, 0, 0, .9);
+  --workspace-secondary: rgba(0, 0, 0, .55);
+  --el-font-family: var(--workspace-font);
+  --el-font-size-base: 14px;
+}
+body { font-family: var(--workspace-font); font-size: 14px; color: var(--workspace-text); line-height: 1.5; }
+#app { font-family: var(--workspace-font); }
+button, input, textarea, select, .el-overlay { font-family: var(--workspace-font); }
+#app .vl-main .content-box { font-size: 14px; color: var(--workspace-text); }
+
+#app .vl-main .home .home-top-box-productModel {
+  font-weight: bold;
+  font-size: 26px;
+  color: #0B5CAD;
+  text-transform: none;
+}
+
+#app .vl-main .home .home-top-box-deviceId {
+  font-weight: 400;
+  font-size: 15px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+#app .vl-main .home .home-top-box-time {
+  font-weight: bold;
+  font-size: 20px;
+  color: #000000;
+}
+
+#app .vl-main .home .home-top-box-timeco {
+  font-weight: 400;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+#app .vl-main .home .home-center-box-left,
+#app .vl-main .home .home-center-box-right {
+  font-weight: 600;
+  font-size: 15px;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+#app .vl-main .home .home-center-box-center-top-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+#app .vl-main .home .home-center-box-left-t {
+  font-weight: 600;
+  font-size: 17px;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+#app .vl-main .home .home-center-box-left-b {
+  font-weight: 400;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+  line-height: 22px;
+}
+
+#app .vl-main .home .home-center-box-center-top-statu {
+  font-weight: 400;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+#app .vl-main .home .connected-font {
+  color: #28613e;
+}
+
+#app .vl-main .home .disconnected-font {
+  color: #9f3535;
+}
+
+#app .vl-main .home .home-bottom-box-left-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+#app .vl-main .home .formclass-left {
+  font-weight: 400;
+  font-size: 14px;
+  color: #000000;
+}
+
+#app .vl-main .home .formclass-right {
+  font-weight: 500;
+  font-size: 14px;
+  color: #000000;
+}
+
+#app .vl-main .home .temperature-value {
+  font-weight: bold;
+  font-size: 24px;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+#app .vl-main .home .temperature-unit {
+  font-weight: 400;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+#app .vl-main .home .legend-item {
+  font-size: 12px;
+}
+
+#app .vl-main .home .legend-text {
+  font-weight: 400;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+#app .vl-main .home .legend-value {
+  font-weight: 600;
+  font-size: 17px;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+#app .vl-main .home .memory-image-container .memory-number {
+  font-size: 36px;
+  font-weight: bold;
+  color: #FFFFFF;
+}
+
+#app .vl-main .home .memory-image-container .memory-percent {
+  font-size: 28px;
+  font-weight: 500;
+  color: #FFFFFF;
+}
+
+#app .vl-main .home .memory-status {
+  font-size: 15px;
+  font-weight: 500;
+  color: #FFFFFF;
+}
+
+#app .vl-main .home .home-bottom-box-right-one-left {
+  font-weight: 400;
+  font-size: 14px;
+  color: #000000;
+}
+
+#app .vl-main .home .home-bottom-box-right-one-right {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+#app .vl-main .home .network-nav .nav-button:disabled {
+  color: #c0c4cc;
+}
+
+#app .vl-main .home .network-nav .nav-button .el-icon {
+  font-size: 24px;
+  color: #666;
+}
+
+#app .vl-main .home .restart-dialog .el-dialog__title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #1D2129;
+  line-height: 24px;
+}
+
+#app .vl-main .home .restart-confirm .restart-confirm-text {
+  font-size: 14px;
+  line-height: 22px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+#app .vl-main .home .no-data-container .no-data-text {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+#app .vl-main .log-box-left-title {
+  font-weight: 600;
+  font-size: 17px;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+#app .vl-main .log-tab {
+  font-weight: 400;
+  font-size: 14px;
+  color: #000000;
+}
+
+#app .vl-main .log-tab-active {
+  color: #409eff;
+  font-weight: 500;
+}
+
+#app .vl-main .log-top-font {
+  font-weight: 400;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+#app .vl-main .updateUrl {
+  color: #409eff;
+}
+
+#app .vl-main .folder-name {
+  font-weight: 500;
+  color: #409eff;
+}
+
+#app .vl-main .el-table th {
+  color: rgba(0, 0, 0, 0.9);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+#app .vl-main .returnFont {
+  font-weight: 500;
+  font-size: 14px;
+  color: #FFFFFF;
+}
+
+#app .vl-main .active-button {
+  color: #007CF7;
+}
+
+#app .vl-main .log-content-box {
+  font-weight: 400;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+#app .vl-main .log-line {
+  line-height: 1.5;
+}
+
+#app .vl-main .scroll-to-bottom-btn {
+  color: #666;
+}
+
+#app .vl-main .remote-box-top-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+#app .vl-main .status-indicator {
+  font-weight: 600;
+}
+
+#app .vl-main .connection-info {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+#app .vl-main .desktop-placeholder {
+  color: #fff;
+}
+
+#app .vl-main .placeholder-icon {
+  font-size: 48px;
+  color: #6c757d;
+}
+
+#app .vl-main .connection-tips h4 {
+  color: #fff;
+}
+
+#app .vl-main .connection-tips li {
+  color: #adb5bd;
+}
+
+#app .vl-main .connection-tips li::before {
+  color: #4facfe;
+}
+
+#app .vl-main .sysup-box-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+#app .vl-main .sysup-top-font {
+  font-size: 14px;
+  line-height: 22px;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+#app .vl-main .up-font {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+#app .vl-main .up-name-de {
+  font-size: 14px;
+  color: #333;
+}
+
+#app .vl-main .up-con-row {
+  font-size: 14px;
+  line-height: 20px;
+  color: #333;
+}
+
+#app .vl-main .up-con-right {
+  font-weight: 500;
+}
+
+#app .vl-main .up-progress-top,
+#app .vl-main .up-progress-details {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+#app .vl-main .up-progress-details {
+  color: #666;
+}
+
+#app .vl-main .up-status {
+  font-size: 14px;
+  line-height: 22px;
+  color: #666;
+}
+
+#app .vl-main .passwordCon .note {
+  color: rgba(0, 0, 0, 0.9);
+}
+
+#app .vl-main .passwordCon .pwd-con {
+  font-weight: 400;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+/* 首页实物图按原型高度显示，保持各产品图片原始比例。 */
+#app .vl-main .home-top-box-left .device-photo { width: 132px; height: 88px; object-fit: contain; flex-shrink: 0; }
+#app .vl-main .monitor-chart-panel { color: var(--workspace-text); }
+#app .vl-main .monitor-chart-panel h2 { font-size: 17px; font-weight: 600; color: var(--workspace-title); }
+#app .vl-main .monitor-chart-panel h3 { font-size: 14px; font-weight: 600; color: var(--workspace-title); }
+#app .vl-main .monitor-chart-panel .analysis-box p { font-size: 14px; color: var(--workspace-text); }
+#app .vl-main .monitor-chart-panel .analysis-box .error-text { color: #ae5427; }
+#app .vl-main .monitor-chart-panel .stat span, #app .vl-main .monitor-chart-panel .stat small,
+#app .vl-main .monitor-chart-panel .data-note { font-size: 12px; color: var(--workspace-secondary); }
+#app .loginMain .loginCon .tit { font-size: 24px; font-weight: 600; color: #0B5CAD; }
+#app .loginMain .loginCon .note { font-size: 12px; color: rgba(0, 0, 0, .45); }

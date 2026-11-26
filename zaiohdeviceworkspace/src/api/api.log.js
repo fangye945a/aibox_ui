@@ -18,7 +18,7 @@ export function getView(data) {
     mode,
     data
   })
-} 
+}
 export function download(data) {
   return request({
     url: '/api/logs/download',
@@ -28,7 +28,7 @@ export function download(data) {
     responseType: 'blob',
   })
 }
-//获取日志配置路径 
+//获取日志配置路径
 export function getConfig(params) {
   return request({
     url: '/api/logs/getConfig',
@@ -37,7 +37,7 @@ export function getConfig(params) {
     params
   })
 }
-//设置日志配置路径 
+//设置日志配置路径
 export function setConfig(data) {
   return request({
     url: '/api/logs/setConfig',

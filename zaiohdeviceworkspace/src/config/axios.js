@@ -1,12 +1,15 @@
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import router from '@/router';
-import { demoAdapter } from '@/demo/data';
-import { storage } from '@/demo/storage';
+import { demoAdapter, demoEnabled } from '@/demo/data';
 
-const service = axios.create({baseURL: '/', timeout: 30000, adapter: demoAdapter});
+const service = axios.create({
+  baseURL: '/',
+  timeout: 30000,
+  adapter: demoEnabled ? demoAdapter : undefined,
+});
 service.interceptors.request.use(config => {
-  const token = storage.getItem('loginToken');
+  const token = localStorage.getItem('loginToken');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -21,8 +24,8 @@ service.interceptors.response.use(response => {
   // 切页和暂停主动取消监控请求，不作为网络故障提示。
   if (axios.isCancel(error)) return Promise.reject(error);
   if (error.response?.status === 401) {
-    storage.removeItem('loginToken');
-    storage.removeItem('isFirst');
+    localStorage.removeItem('loginToken');
+    localStorage.removeItem('isFirst');
     await router.replace({name: 'login'});
   }
   let data = error.response?.data;

@@ -13,25 +13,26 @@
  * limitations under the License.
  */
 
-import { demoFetch } from '@/demo/data';
-import { storage } from '@/demo/storage';
+import { demoEnabled, demoFetch } from '@/demo/data';
 
 // OTA接口返回任务对象，独立解析，避免混入本地控制台的code/data响应协议。
 export async function otaRequest(path, options = {}) {
-    const headers = {Authorization: `Bearer ${storage.getItem('loginToken') || ''}`, ...options.headers};
+    const headers = {Authorization: `Bearer ${localStorage.getItem('loginToken') || ''}`, ...options.headers};
     let body = options.body;
     if (body && !(body instanceof Blob)) {
         body = JSON.stringify(body);
         headers['Content-Type'] = 'application/json';
     }
-    const response = await demoFetch(`/api/ota${path}`, {...options, headers, body, cache: 'no-store'});
+    const target = `/api/ota${path}`;
+    const requestOptions = {...options, headers, body, cache: 'no-store'};
+    const response = demoEnabled ? await demoFetch(target, requestOptions) : await fetch(target, requestOptions);
     const data = await response.json();
     if (!response.ok) {
         const error = new Error(data.error || data.msg || `请求失败：${response.status}`);
         error.status = response.status;
         if (response.status === 401) {
-            storage.removeItem('loginToken');
-            window.location.hash = '/login';
+            localStorage.removeItem('loginToken');
+            window.location.assign('/#/login');
         }
         throw error;
     }

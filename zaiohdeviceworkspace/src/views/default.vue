@@ -1,14 +1,14 @@
 <template>
   <div class="vl-main">
-    <!--左侧全高导航-->
     <vl-slide></vl-slide>
-    <!--右侧区域-->
     <div class="right-area">
-      <!--头部-->
       <vl-header></vl-header>
-      <!--内容-->
       <div class="content-box">
-        <router-view></router-view>
+        <router-view v-slot="{ Component }">
+          <keep-alive include="DeviceAssistant">
+            <component :is="Component" />
+          </keep-alive>
+        </router-view>
       </div>
     </div>
     <!--底部-->
@@ -16,11 +16,7 @@
   </div>
 </template>
 <script>
-  import { storage } from '@/demo/storage';
-  import { demoFetch } from '@/demo/data';
-  import { onMounted, onBeforeUnmount, provide } from 'vue';
-  import { CreateVideoWorkspace, RunVideoWorkspace, VIDEO_WORKSPACE } from '@/demo/video-workspace';
-  import { CreateSystemMonitor, RunSystemMonitor, SYSTEM_MONITOR } from '@/demo/system-monitor';
+  import { onMounted, onBeforeUnmount } from 'vue';
   import { useRouter } from 'vue-router';
   import { startSessionWatch } from '@/utils/session-watch';
   import vlHeader from '@/components/header.vue';
@@ -31,30 +27,14 @@
     setup() {
       const router = useRouter();
       let stopSessionWatch = null;
-      let stopVideoWorkspace = null;
-      let stopSystemMonitor = null;
-      const videoWorkspace = CreateVideoWorkspace();
-      const systemMonitor = CreateSystemMonitor();
-      provide(VIDEO_WORKSPACE, videoWorkspace);
-      provide(SYSTEM_MONITOR, systemMonitor);
       onMounted(() => {
-        stopVideoWorkspace = RunVideoWorkspace(videoWorkspace);
-        stopSystemMonitor = RunSystemMonitor(systemMonitor);
         stopSessionWatch = startSessionWatch(() => {
-          storage.removeItem('loginToken');
-          storage.removeItem('isFirst');
+          localStorage.removeItem('loginToken');
+          localStorage.removeItem('isFirst');
           router.replace({name: 'login'});
-        }, {
-          getToken: () => storage.getItem('loginToken'),
-          request: demoFetch,
-          isTokenChange: event => storage.isChange(event, 'loginToken')
         });
       });
-      onBeforeUnmount(() => {
-        stopSessionWatch?.();
-        stopVideoWorkspace?.();
-        stopSystemMonitor?.();
-      });
+      onBeforeUnmount(() => stopSessionWatch?.());
     },
     data() {
       return {
@@ -62,8 +42,8 @@
       }
     },
     mounted() {
-    const isFirst = storage.getItem('isFirst');
-    const promptDisabled = storage.getItem('defaultPasswordPromptDisabled') === 'true';
+    const isFirst = localStorage.getItem('isFirst');
+    const promptDisabled = localStorage.getItem('defaultPasswordPromptDisabled') === 'true';
     if (!promptDisabled && isFirst === 'true') {
       this.$refs.pwdDialog.dialogVisible = true;
     }
@@ -73,7 +53,7 @@
         // 取消只关闭弹框，下次使用默认密码登录仍然提醒。
       },
       handleNeverRemind() {
-        storage.setItem('isFirst', 'false');
+        localStorage.setItem('isFirst', 'false');
       }
     }
 
@@ -83,9 +63,10 @@
   .vl-main {
     width: 100%;
     height: 100%;
-    color: #2B3F5C;
-    font-size: .16rem;
+    color: var(--workspace-text);
+    font-size: 14px;
     display: flex;
+    position: relative;
     overflow: hidden;
   }
   .right-area {

@@ -5,23 +5,13 @@
     <div class="ota-content">
       <div class="sysup-top">
         <img src="@/assets/img/icon.png" alt="">
-        <p class="sysup-top-font">模拟升级演示。可以使用内置升级包，文件处理和任务进度都留在当前浏览器。</p>
+        <p class="sysup-top-font">上传并校验通过后，设备将自动升级并重启。<br>升级期间请勿断电。</p>
       </div>
       <div class="up-box" :class="{'is-disabled': busy || jobActive}">
         <div class="up-box-center">
           <input ref="fileInput" type="file" accept=".zip" class="files" aria-label="选择升级文件"
                  :disabled="busy || jobActive" @change="selectFile">
-          <svg class="center-image" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M24 6c10 0 18 7.4 18 16.5 0 1.6-.25 3.2-.72 4.66l2.9 2.9c.13-1.16.82-2.3.82-3.56C45 15.6 35.6 6 24 6 12.4 6 3 15.6 3 27.5c0 1.26.69 2.4.82 3.56l2.9-2.9C6.25 25.7 6 24.1 6 22.5C6 13.4 14 6 24 6Z" fill="url(#otaGrad)"/>
-            <path d="M23.2 32.4 15.4 24.6c-.6-.6-.6-1.5 0-2.1s1.5-.6 2.1 0l5 5V10.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v17l5-5c.6-.6 1.5-.6 2.1 0 .28.28.44.66.44 1.06s-.16.78-.44 1.04l-7.8 7.8c-.56.56-1.5.56-2.06 0Z" fill="#007CF7"/>
-            <path d="M12.5 33.5c0-.83.67-1.5 1.5-1.5h20c.83 0 1.5.67 1.5 1.5V37c0 .83-.67 1.5-1.5 1.5H14c-.83 0-1.5-.67-1.5-1.5v-3.5Z" fill="#007CF7"/>
-            <defs>
-              <linearGradient id="otaGrad" x1="24" y1="6" x2="24" y2="44" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#007CF7" stop-opacity=".28"/>
-                <stop offset="1" stop-color="#007CF7" stop-opacity=".06"/>
-              </linearGradient>
-            </defs>
-          </svg>
+          <img src="@/assets/img/xiazai.png" class="center-image" alt="">
           <p class="up-font">{{ selectedFile || upload ? '点击重新选择升级文件' : '点击选择升级文件' }}</p>
         </div>
       </div>
@@ -60,8 +50,6 @@
       </div>
       <p v-if="message !== '请选择升级文件。'" class="up-status" role="status">{{ message }}</p>
       <div class="up-actions">
-        <el-button :disabled="busy || confirming || jobActive || (upload && upload.fileName !== demoFirmwareName)"
-                   @click="selectDemoFirmware">使用样例升级包</el-button>
         <el-button type="primary" :disabled="busy || confirming || jobActive || (!selectedFile && upload?.status !== 'ready') || upload?.status === 'checking'"
                    @click="startUpload">{{ upload?.status === 'ready' ? '开始升级' : upload?.offset ? '继续上传并升级' : '上传并升级' }}</el-button>
         <el-button v-if="busy" @click="pauseUpload">暂停上传</el-button>
@@ -71,13 +59,10 @@
 </template>
 
 <script setup>
-import { storage } from '@/demo/storage';
 import {computed, onBeforeUnmount, onMounted, ref} from 'vue';
 import {ElMessage, ElMessageBox} from 'element-plus';
 import {otaRequest} from '@/api/ota';
-import { createDemoFirmware, DEMO_FIRMWARE_NAME } from '@/demo/ota';
 
-const demoFirmwareName = DEMO_FIRMWARE_NAME;
 const fileInput = ref(null);
 const selectedFile = ref(null);
 const upload = ref(null);
@@ -90,7 +75,7 @@ const hashPercent = ref(0);
 const chunkSize = ref(8 * 1024 * 1024);
 const transferSeconds = ref(0);
 const transferMBps = ref(0);
-const phaseNames = {uploading:'上传中', checking:'校验完整性', ready:'校验通过，可以开始升级', validating:'模拟验签及升级准备', reboot_pending:'模拟设备重启中', verifying:'核验本轮模拟升级结果', succeeded:'模拟升级成功', failed:'模拟升级失败', unknown:'结果待核对，禁止重复升级'};
+const phaseNames = {uploading:'上传中', checking:'校验完整性', ready:'校验通过，可以开始升级', validating:'验签及升级准备', reboot_pending:'等待设备完成升级重启', verifying:'核验本轮升级结果', succeeded:'升级成功', failed:'升级失败', unknown:'结果待核对，禁止重复升级'};
 const jobActive = computed(() => executing.value || (job.value && !['succeeded','failed'].includes(job.value.status)));
 const modifiedTime = computed(() => selectedFile.value ? new Date(selectedFile.value.lastModified).toLocaleString() : '');
 const percentage = computed(() => upload.value ? Math.min(100, Math.floor(upload.value.offset * 100 / upload.value.size)) : 0);
@@ -108,13 +93,6 @@ function formatSize(bytes) {
 function selectFile(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-    pickFile(file);
-}
-function selectDemoFirmware() {
-    if (fileInput.value) fileInput.value.value = '';
-    pickFile(createDemoFirmware());
-}
-function pickFile(file) {
     if (!file.name.toLowerCase().endsWith('.zip')) { ElMessage.error('请选择 ZIP 格式的升级包'); return; }
     if (upload.value && (file.name !== upload.value.fileName || file.size !== upload.value.size)) {
         ElMessage.error('存在其他上传任务，请先删除任务，或重新选择原文件');
@@ -143,8 +121,8 @@ async function startUpload() {
     if (busy.value || confirming.value || jobActive.value || (!selectedFile.value && upload.value?.status !== 'ready')) return;
     confirming.value = true;
     try {
-        const prompt = upload.value?.status === 'ready' ? '开始模拟升级和重启，是否继续？'
-            : '将在当前浏览器模拟上传、校验、升级和重启，是否继续？';
+        const prompt = upload.value?.status === 'ready' ? '设备将开始升级并自动重启。升级期间请勿断电，是否继续？'
+            : '文件上传并校验通过后，设备将自动升级并重启。升级期间请勿断电，是否继续？';
         await ElMessageBox.confirm(prompt, '系统升级', {type: 'warning', confirmButtonText: '继续', cancelButtonText: '取消'});
     } catch {
         return;
@@ -163,7 +141,7 @@ async function startUpload() {
     try {
         if (!upload.value) {
             upload.value = await otaRequest('/uploads', {method:'POST',body:{fileName:selectedFile.value.name,size:selectedFile.value.size}});
-            storage.setItem('otaUploadId', upload.value.id);
+            localStorage.setItem('otaUploadId', upload.value.id);
         }
         chunkSize.value = upload.value.chunkSize || 1024 * 1024;
         // 摘要失败即时转成结果，避免上传期间出现未处理的Promise拒绝。
@@ -219,7 +197,7 @@ async function removeUpload() {
         await otaRequest(`/uploads/${upload.value.id}`, {method:'DELETE'});
         upload.value = null;
         selectedFile.value = null;
-        storage.removeItem('otaUploadId');
+        localStorage.removeItem('otaUploadId');
         if (fileInput.value) fileInput.value.value = '';
         message.value = '上传任务已删除。';
     } catch (error) { message.value = error.message; }
@@ -230,7 +208,7 @@ async function executeUpgrade() {
     try {
         job.value = await otaRequest('/execute', {method:'POST',body:{uploadId:upload.value.id}});
         autoUpgradeRequested = false;
-        storage.setItem('otaJobId',job.value.id);
+        localStorage.setItem('otaJobId',job.value.id);
         message.value = phaseNames[job.value.status];
         schedulePoll();
     } catch (error) {
@@ -246,34 +224,34 @@ function schedulePoll() {
 }
 async function restore() {
     try {
-        const jobId = storage.getItem('otaJobId');
+        const jobId = localStorage.getItem('otaJobId');
         if (jobId) {
             job.value = await otaRequest(`/jobs/${jobId}`);
             message.value = job.value.error || phaseNames[job.value.status];
             if (job.value.status === 'succeeded' || job.value.status === 'failed') {
-                storage.removeItem('otaJobId');
-                storage.removeItem('otaUploadId');
+                localStorage.removeItem('otaJobId');
+                localStorage.removeItem('otaUploadId');
                 upload.value = null;
                 selectedFile.value = null;
             } else if (job.value.status !== 'unknown') schedulePoll();
             return;
         }
         const data = await otaRequest('/uploads');
-        const id = storage.getItem('otaUploadId');
+        const id = localStorage.getItem('otaUploadId');
         upload.value = data.uploads.find(item => item.id === id && item.status !== 'consumed') || data.uploads.find(item => ['uploading','checking','ready','executing'].includes(item.status)) || null;
         if (upload.value) {
-            storage.setItem('otaUploadId',upload.value.id);
+            localStorage.setItem('otaUploadId',upload.value.id);
             chunkSize.value = upload.value.chunkSize || 1024 * 1024;
             message.value = upload.value.error || phaseNames[upload.value.status] || upload.value.status;
             if (upload.value.status === 'executing') {
-                storage.setItem('otaJobId', upload.value.id);
+                localStorage.setItem('otaJobId', upload.value.id);
                 schedulePoll();
             }
             if (upload.value.status === 'checking') schedulePoll();
             if (upload.value.status === 'ready' && autoUpgradeRequested) await executeUpgrade();
         }
     } catch (error) {
-            message.value = error.message;
+        message.value = job.value ? '设备正在重启或连接暂不可用，等待重新连接。' : error.message;
         if (job.value && job.value.status !== 'unknown') schedulePoll();
     }
 }
@@ -285,20 +263,19 @@ onBeforeUnmount(() => { disposed = true; pauseUpload(); clearTimeout(timer); wor
 .sysup-box {
   min-height: 500px;
   height: 100%;
-  padding: 16px 20px;
+  padding: 10px;
   position: relative;
   background: #fff;
-  border-radius: 12px;
 }
 .sysup-box-title {
-  margin-bottom: 14px;
-  font-size: 17px;
-  font-weight: 600;
+  margin-bottom: 10px;
+  font-size: 18px;
+  font-weight: bold;
   color: rgba(0, 0, 0, 0.9);
 }
 .shengji-image {
   position: absolute;
-  top: 14px;
+  top: 10px;
   right: 10px;
 }
 .ota-content {
@@ -359,10 +336,9 @@ onBeforeUnmount(() => { disposed = true; pauseUpload(); clearTimeout(timer); wor
   gap: 10px;
 }
 .center-image {
-  width: 64px;
-  height: 64px;
+  width: 60px;
+  height: 60px;
   object-fit: contain;
-  display: block;
 }
 .up-font {
   font-size: 14px;

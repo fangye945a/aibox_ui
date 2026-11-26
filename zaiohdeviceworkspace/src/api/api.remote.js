@@ -20,7 +20,7 @@ export function connect(data) {
     mode,
     data
   })
-} 
+}
 //断开远程连接
 export function disconnect(data) {
   return request({

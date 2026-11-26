@@ -3,7 +3,7 @@
       <!-- 首页头部 -->
       <div class="home-top-box">
           <div class="home-top-box-left">
-              <img class="device-photo" src='@/assets/img/ct21b-hd.png' alt="在鸿工控机">
+              <img v-if="productImage" :src="productImage" :alt="data.device_info.product_model" class="device-photo">
               <div v-if="data && data.device_info">
                 <p class="home-top-box-productModel">在鸿工控机-{{ data.device_info.product_model }}</p>
                 <p class="home-top-box-deviceId">设备编号：{{ data.device_info.device_id }}</p>
@@ -15,14 +15,14 @@
                 <p class="home-top-box-timeco">累计运行时间</p>
               </div>
               <el-button type="primary" @click="handleRestart">重启</el-button>
-          </div>  
+          </div>
       </div>
 
       <!-- 首页中间 -->
       <div class="home-center-box">
             <div class="home-center-box-left" v-if="data" >
               <div class="memory-bg-container">
-                <img :src="data.memory_info.rate >= 80 ? pinkbot : bluebot" 
+                <img :src="data.memory_info.rate >= 80 ? pinkbot : bluebot"
                      class="memory-bg-image"
                      alt="内存背景">
               </div>
@@ -37,7 +37,7 @@
                     <div v-if="data" class="memory-status">
                       {{ data.memory_info.rate >= 80 ? '异常' : '正常' }}
                     </div>
-                      
+
                 </div>
               </div>
               <div class="centerflex">
@@ -65,7 +65,7 @@
                   <div class="centerflex">
                     <div ref="cpuUsageChart" style="width: 100%; height: 120px;"></div>
                   </div>
-                  
+
                 </div>
                 <!-- CPU温度 -->
                 <div class="home-center-box-center-bottom">
@@ -94,18 +94,18 @@
                 <div class="storage-info" v-if="data && data.storage_info">
                     <div class="combined-storage-bar">
                         <div class="storage-bar">
-                            <div 
-                                class="system-segment" 
+                            <div
+                                class="system-segment"
                                 :style="{ width: calculatePercentage(storageInfo.systemUsed, storageInfo.total) + '%' }"
                                 :title="'系统占用: ' + storageInfo.systemUsed + 'GB'">
                             </div>
-                            <div 
-                                class="used-segment" 
+                            <div
+                                class="used-segment"
                                 :style="{ width: calculatePercentage(storageInfo.used, storageInfo.total) + '%' }"
                                 :title="'已用存储: ' + storageInfo.used + 'GB'">
                             </div>
-                            <div 
-                                class="available-segment" 
+                            <div
+                                class="available-segment"
                                 :style="{ width: calculatePercentage(storageInfo.available, storageInfo.total) + '%' }"
                                 :title="'剩余可用: ' + storageInfo.available + 'GB'">
                             </div>
@@ -142,13 +142,13 @@
             <div class="storage-info" v-if="data && data.storage_expansion_info">
                 <div class="combined-storage-bar">
                     <div class="storage-bar">
-                        <div 
-                            class="used-segment" 
+                        <div
+                            class="used-segment"
                             :style="{ width: calculatePercentage(expansionStorageInfo.used, expansionStorageInfo.total) + '%' }"
                             :title="'已用扩展存储: ' + expansionStorageInfo.used + 'GB'">
                         </div>
-                        <div 
-                            class="available-segment" 
+                        <div
+                            class="available-segment"
                             :style="{ width: calculatePercentage(expansionStorageInfo.available, expansionStorageInfo.total) + '%' }"
                             :title="'剩余可用: ' + expansionStorageInfo.available + 'GB'">
                         </div>
@@ -193,27 +193,27 @@
               <div class="network-container" v-if="data && data.network_info">
                 <!-- 左右切换按钮 -->
                 <div class="network-nav" v-if="data.network_info.length >2">
-                <el-button 
+                <el-button
                   :disabled="currentNetworkIndex === 0"
                   @click="prevNetwork"
                   class="nav-button prev-button"
                 >
                   <el-icon><ArrowLeft /></el-icon>
                 </el-button>
-                <el-button 
+                <el-button
                   :disabled="currentNetworkIndex >= data.network_info.length - itemsPerPage"
                   @click="nextNetwork"
                   class="nav-button next-button"
                 >
                   <el-icon><ArrowRight /></el-icon>
-                </el-button>                
+                </el-button>
                 </div>
 
                 <!-- 网络数据展示 -->
                 <div class="network-item-wrapper">
-                  <div 
-                    v-for="(network, index) in visibleNetworks" 
-                    :key="index" 
+                  <div
+                    v-for="(network, index) in visibleNetworks"
+                    :key="index"
                     class="network-item"
                     :class="{ 'single-item': visibleNetworks.length === 1 }"
                   >
@@ -229,51 +229,49 @@
                         <p class="home-bottom-box-right-one-right" :class="network.status === 1 ? 'connected-font' : 'disconnected-font'">
                           {{ network.status === 1 ? '已连接' : '未连接' }}
                         </p>
-                      </div> 
+                      </div>
                       <div class="pdflex">
                         <p class="home-bottom-box-right-one-left">以太网接口</p>
                         <p class="home-bottom-box-right-one-right">{{ network.interface }}</p>
-                      </div> 
+                      </div>
                       <div class="pdflex">
                         <p class="home-bottom-box-right-one-left">IP地址</p>
                         <p class="home-bottom-box-right-one-right">{{ network.IP }}</p>
-                      </div> 
+                      </div>
                       <div class="pdflex">
                         <p class="home-bottom-box-right-one-left">网关</p>
                         <p class="home-bottom-box-right-one-right">{{ network.gateway }}</p>
-                      </div> 
+                      </div>
                       <div class="pdflex">
                         <p class="home-bottom-box-right-one-left">子网掩码</p>
                         <p class="home-bottom-box-right-one-right">{{ network.subnet_mask }}</p>
-                      </div> 
+                      </div>
                       <div class="pdflex">
                         <p class="home-bottom-box-right-one-left">DNS</p>
                         <p class="home-bottom-box-right-one-right">{{ network.DNS }}</p>
                       </div>
-                      
+
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-      <!-- 重启确认弹窗（与系统升级确认弹窗同风格） -->
+      <!-- 重启确认弹窗 -->
       <el-dialog
       v-model="restartDialogVisible"
       title="重启"
-      width="420px"
-      :close-on-click-modal="false"
-      class="restart-dialog"
+      width="36%"
+      :before-close="handleClose"
       >
-      <div class="restart-confirm">
-        <el-icon class="restart-confirm-icon" color="#E6A23C" :size="22"><WarningFilled /></el-icon>
-        <p class="restart-confirm-text">
+      <div style="padding: 10px 0;">
+        <p style="font-weight: 400;font-size: 14px;color: rgba(0,0,0,0.9);">
           确定要重启设备吗？重启过程中页面功能将无法使用。
         </p>
       </div>
 
       <template #footer>
-        <span class="dialog-footer">
+        <span>
           <el-button @click="restartDialogVisible = false">取消</el-button>
           <el-button type="primary" @click="confirmRestart">重启</el-button>
         </span>
@@ -282,16 +280,17 @@
   </div>
 </template>
 <script setup>
-import { storage } from '@/demo/storage';
-import { DemoEventSource } from '@/demo/data';
+import {EventSourcePolyfill} from 'event-source-polyfill'
+import { DemoEventSource, demoEnabled } from '@/demo/data'
 import { onBeforeRouteLeave } from 'vue-router';
 import { disconnect} from "@/api/api.log"
 import { getInfo ,restart} from "@/api/api.home";
 import { ref, shallowRef, onMounted, watch ,computed ,onUnmounted, reactive} from 'vue';
 import * as echarts from 'echarts';
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, ArrowRight , WarningFilled } from '@element-plus/icons-vue'
+import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import { Clock } from '@element-plus/icons-vue'
+import { getProductImage } from '@/utils/product-image';
 import wdjf from '@/assets/img/wdjf.png';
 import wdjt from '@/assets/img/wdjt.png';
 import yuanf from '@/assets/img/yuanf.png';
@@ -338,7 +337,7 @@ const drawMemoryBall = () => {
   const centerY = canvas.height / 2;
   const radius = 70;
   const usage = data.value.memory_info.rate;
-  
+
   // 球体颜色配置
   const isHighUsage = usage >= 80;
   const borderColor = isHighUsage ? 'rgba(245, 108, 108, 0.2)' : 'rgba(0, 124, 247, 0.2)';
@@ -349,45 +348,45 @@ const drawMemoryBall = () => {
 
   // 清除画布
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
+
   // 绘制圆形边框
   ctx.beginPath();
   ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
   ctx.strokeStyle = borderColor;
   ctx.lineWidth = 0.1;
   ctx.stroke();
-  
+
   // 进入剪切区域
   ctx.save();
   ctx.beginPath();
   ctx.arc(centerX, centerY, radius - 2, 0, Math.PI * 2);
   ctx.clip();
-  
+
   // 填充整个圆形背景色
   ctx.fillStyle = fillColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
+
   // 计算液体高度
   const liquidHeight = canvas.height - (usage / 100) * canvas.height;
-  
+
   // 绘制液体背景
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, liquidHeight, canvas.width, canvas.height);
-  
+
   // 波浪动画
   const waveOffset = Date.now() / 1000;
   ctx.beginPath();
   ctx.moveTo(0, liquidHeight + Math.sin(waveOffset) * 5);
-  
+
   for (let x = 0; x <= canvas.width; x += 10) {
     const y = liquidHeight + Math.sin(x * 0.05 + waveOffset) * 5;
     ctx.lineTo(x, y);
   }
-  
+
   ctx.lineTo(canvas.width, canvas.height);
   ctx.lineTo(0, canvas.height);
   ctx.closePath();
-  
+
   // 液体渐变
   const gradient = ctx.createLinearGradient(0, liquidHeight, 0, canvas.height);
   gradient.addColorStop(0, waveGradientStart);
@@ -397,18 +396,18 @@ const drawMemoryBall = () => {
     // 主高光
   ctx.save();
   ctx.beginPath();
-  
+
   // 变换坐标系以绘制椭圆形高光
   ctx.translate(centerX - radius * 0.16, centerY - radius * 0.6);
-  ctx.scale(2.8, 1); 
-  
+  ctx.scale(2.8, 1);
+
   const highlightGradient = ctx.createRadialGradient(
     0, 0, 0,
     0, 0, radius * 0.2
   );
   highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
   highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-  
+
   ctx.arc(0, 0, radius * 0.3, 0, Math.PI * 2);
   ctx.fillStyle = highlightGradient;
   ctx.fill();
@@ -425,14 +424,14 @@ const drawMemoryBall = () => {
   );
   edgeHighlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
   edgeHighlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-  
+
   ctx.arc(0, 0, radius * 0.15, 0, Math.PI * 2);
   ctx.fillStyle = edgeHighlightGradient;
   ctx.fill();
   ctx.restore();
   // 恢复绘图状态
   ctx.restore();
-  
+
   // 动画循环
   memoryBallAnimationId = requestAnimationFrame(drawMemoryBall);
 };
@@ -443,12 +442,12 @@ const formattedUptime = computed(() => {
     const hours = Math.floor(seconds / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)
     const secs = seconds % 60
-    
+
     let result = []
     if (hours > 0) result.push(`${hours}小时`)
     if (minutes > 0) result.push(`${minutes}分钟`)
     result.push(`${secs}秒`)
-    
+
     return result.join(' ')
 })
 
@@ -456,7 +455,7 @@ const formattedUptime = computed(() => {
 const visibleNetworks = computed(() => {
   if (!data.value?.network_info) return [];
   return data.value.network_info.slice(
-    currentNetworkIndex.value, 
+    currentNetworkIndex.value,
     currentNetworkIndex.value + itemsPerPage
   );
 });
@@ -481,8 +480,8 @@ const handleRestart = () => {
 // 确认重启
 const confirmRestart = async () => {
   try {
-    const res = await restart(); 
-    ElMessage.success(res.msg || '重启成功'); 
+    const res = await restart();
+    ElMessage.success(res.msg || '重启成功');
     restartDialogVisible.value = false;
   } catch (error) {ElMessage.error(error.message || '未知错误');}
 };
@@ -518,25 +517,25 @@ const getTemperatureImage = (temp) => {
 
 // 计算存储信息
 const storageInfo = computed(() => {
-  if (!data.value || !data.value.storage_info) return { 
-    systemUsed: 0, 
-    used: 0, 
-    available: 0, 
-    total: 0 
+  if (!data.value || !data.value.storage_info) return {
+    systemUsed: 0,
+    used: 0,
+    available: 0,
+    total: 0
   };
   return {
     systemUsed: parseFloat(data.value.storage_info.storage_system_used) ,
     used: parseFloat(data.value.storage_info.storage_used) ,
     available: parseFloat(data.value.storage_info.storage_can_used),
-    total: parseFloat(data.value.storage_info.storage) 
+    total: parseFloat(data.value.storage_info.storage)
   };
 });
 // 计算扩展存储信息
 const expansionStorageInfo = computed(() => {
-  if (!data.value || !data.value.storage_expansion_info) return { 
-    used: 0, 
-    available: 0, 
-    total: 0 
+  if (!data.value || !data.value.storage_expansion_info) return {
+    used: 0,
+    available: 0,
+    total: 0
   };
   return {
     used: parseFloat(data.value.storage_expansion_info.storage_expansion_used),
@@ -550,23 +549,24 @@ const calculatePercentage = (value, total) => {
   return Math.round((value / total) * 100);
 };
 // 根据rate获取颜色
-const getMemoryColor = (rate) => { 
-  if (rate >= 70) return '#F56C6C'; 
-  return '#409EFF'; 
+const getMemoryColor = (rate) => {
+  if (rate >= 70) return '#F56C6C';
+  return '#409EFF';
 };
 
 // CPU使用率图表
 const initCpuUsageChart = () => {
   if (!cpuUsageChart.value || !data.value) return;
-  
+
   const usage = sseParsedData.value.cpu_usage ?? data.value.cpu_usage;
-  const color = getMemoryColor(usage); 
+  const color = getMemoryColor(usage);
   const chart = cpuChartInstance || echarts.init(cpuUsageChart.value);
   if (!cpuChartInstance) window.addEventListener('resize', resizeCPU);
   cpuChartInstance = chart;
 
-  
+
   const option = {
+    textStyle: {fontFamily: getComputedStyle(document.body).fontFamily},
     series: [{
       type: 'gauge',
       startAngle: 180,
@@ -578,7 +578,7 @@ const initCpuUsageChart = () => {
       pointer: {
         show: true,
         length: '36%',
-        width: 6, 
+        width: 6,
         itemStyle: {
           color: {
             type: 'linear',
@@ -586,11 +586,11 @@ const initCpuUsageChart = () => {
             colorStops: [
               {
                 offset: 0,
-                color: '#4A90E2' 
+                color: '#4A90E2'
               },
               {
                 offset: 1,
-                color: '#1565C0' 
+                color: '#1565C0'
               }
             ]
           }
@@ -598,7 +598,7 @@ const initCpuUsageChart = () => {
       },
       anchor: {
         show: true,
-        size: 3, 
+        size: 3,
         showAbove: true,
         itemStyle: {
           color: '#FFFFFF',
@@ -648,7 +648,7 @@ const initCpuUsageChart = () => {
       }]
     }]
   };
-  
+
   chart.setOption(option);
 
 }
@@ -657,14 +657,14 @@ const DEVICE_ID_CACHE_KEY = 'device_id_cache';
 const deviceIdCache = ref('');
 const setDeviceIdToCache = (deviceId) => {
   if (deviceId) {
-      storage.setItem(DEVICE_ID_CACHE_KEY, deviceId);
+      localStorage.setItem(DEVICE_ID_CACHE_KEY, deviceId);
       deviceIdCache.value = deviceId;
   }
 };
 
 const uuid=()=>{
   var temp_url = URL.createObjectURL(new Blob());
-  var uuid = temp_url.toString(); 
+  var uuid = temp_url.toString();
   URL.revokeObjectURL(temp_url);
   return uuid.substr(uuid.lastIndexOf("/") + 1);
 }
@@ -680,18 +680,23 @@ const optStop = () => {
   if (eveSource.value) {
     eveSource.value.close();
     eveSource.value = null;
-    if (navigator.onLine && storage.getItem('loginToken')) {
+    if (navigator.onLine && localStorage.getItem('loginToken')) {
       disconnect({type: 'runningStatus', id: searchInfo.sseId}).catch(() => {});
     }
   }
 };
 const optStart = () => {
-  if (!pageActive || !storage.getItem('loginToken')) return;
+  if (!pageActive || !localStorage.getItem('loginToken')) return;
   optStop();
   searchInfo.type = 'runningStatus';
   searchInfo.sseId = uuid();
   lastStatusAt = Date.now();
-  const eventSource = new DemoEventSource(`${window.location.origin}/api/sse/connect?type=runningStatus&id=${searchInfo.sseId}`);
+  const eventSource = demoEnabled ?
+    new DemoEventSource(`${window.location.origin}/api/sse/connect?type=runningStatus&id=${searchInfo.sseId}`) :
+    new EventSourcePolyfill(`${window.location.origin}/api/sse/connect?type=runningStatus&id=${searchInfo.sseId}`, {
+      headers: {Authorization: 'Bearer ' + localStorage.getItem('loginToken')},
+      withCredentials: true
+    });
   eveSource.value = eventSource;
   eventSource.onmessage = (event) => {
     if (!pageActive || eveSource.value !== eventSource || !event.data?.trim()) return;
@@ -720,7 +725,7 @@ const recoverStatus = async () => {
   recoveryAt = Date.now();
   try {
     const available = await fetchData();
-    if (available && pageActive && storage.getItem('loginToken')) optStart();
+    if (available && pageActive && localStorage.getItem('loginToken')) optStart();
   } finally {
     recoveryPending = false;
   }
@@ -783,6 +788,7 @@ onUnmounted(() => {
     cpuChartInstance = null;
     if (memoryBallAnimationId) cancelAnimationFrame(memoryBallAnimationId);
 })
+const productImage = computed(() => getProductImage(data.value?.device_info?.product_model));
 </script>
 <style lang="scss" >
  .home{
@@ -795,34 +801,25 @@ onUnmounted(() => {
     display: flex;
     justify-content: space-between;
   }
- 
-  .home-top-box,
-  .home-center-box-left,
-  .home-center-box-right,
-  .home-center-box-center-top,
-  .home-center-box-center-bottom,
-  .home-bottom-box-left,
-  .home-bottom-box-right {
-    box-shadow: inset 0 0 0 1px #e1e7ed;
-  }
+
   .home-top-box{
-    margin-bottom: 16px;
+    margin-bottom:20px ;
     display: flex;
     justify-content: space-between;
     height: 120px;
     background: #FFFFFF;
     border-radius: 12px;
-    padding: 16px 20px;
+    padding: 10px;
   }
   .home-top-box-productModel{
     font-weight: bold;
-    font-size: 26px;
-    color: #0B5CAD;
+    font-size: 24px;
+    color: rgba(0,0,0,0.9);
     text-transform: none;
   }
   .home-top-box-deviceId{
     font-weight: 400;
-    font-size: 15px;
+    font-size: 16px;
     color: rgba(0,0,0,0.6);
   }
   .home-top-box-left,.home-top-box-right{
@@ -830,12 +827,6 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     height: auto;
-    .device-photo{
-      height: 88px;
-      width: auto;
-      object-fit: contain;
-      display: block;
-    }
   }
   .home-top-box-time{
     font-weight: bold;
@@ -846,14 +837,14 @@ onUnmounted(() => {
   .home-top-box-timeco{
     font-weight: 400;
     font-size: 14px;
-    color: rgba(0,0,0,0.6);   
+    color: rgba(0,0,0,0.6);
     display: flex;
     justify-content: center;
   }
   .home-center-box{
     display: flex;
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 20px;
   }
   .home-center-box-left{
     display: flex; justify-content: space-between;flex-direction: column;position: relative; overflow: hidden;
@@ -863,11 +854,11 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   z-index: 1;
-  
+
   .memory-bg-image {
     width: 100%;
     height: 100%;
-    opacity: 0.55;
+    // opacity: 0.8;
   }
   }
   .centerflex{
@@ -879,11 +870,11 @@ onUnmounted(() => {
   .home-center-box-left,.home-center-box-right{
     width: 100%;
     height: auto;
-    padding:16px;
+    padding:10px;
     border-radius: 12px;
     background: #FFFFFF;
-    font-weight: 600;
-    font-size: 15px;
+    font-weight: 500;
+    font-size: 18px;
     color: rgba(0,0,0,0.9);
   }
   .home-center-box-center{
@@ -894,7 +885,7 @@ onUnmounted(() => {
   }
   .home-center-box-center-top,.home-center-box-center-bottom{
     height: 50%;
-    padding:16px;
+    padding:10px;
     border-radius: 12px;
     background: #FFFFFF;
   }
@@ -903,16 +894,16 @@ onUnmounted(() => {
   }
   .home-center-box-center-top-title{
     width: 50%;
-    font-weight: 600;
-    font-size: 15px;
+    font-weight: 500;
+    font-size: 18px;
     color: rgba(0,0,0,0.9);
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
-  
+
   .home-center-box-left-t{
-    font-weight: 600;
-    font-size: 17px;
-    color: rgba(0,0,0,0.9);
+    font-weight: 500;
+    font-size: 20px;
+    color: #000000;
     display: flex;
     justify-content: center;
   }
@@ -920,7 +911,7 @@ onUnmounted(() => {
     font-weight: 400;
     font-size: 14px;
     color: rgba(0,0,0,0.6);
-    line-height: 22px;    
+    line-height: 22px;
   }
   .mar{
     margin-bottom:30px ;
@@ -929,7 +920,7 @@ onUnmounted(() => {
   .home-center-box-center-top-statu{
     display: flex;
     align-items: center;
-    gap: 8px; 
+    gap: 8px;
     font-weight: 400;
     font-size: 14px;
     color: rgba(0,0,0,0.6);
@@ -940,24 +931,24 @@ onUnmounted(() => {
     border-radius: 50%;
     display: inline-block;
   }
-  
+
   .status-dot.connected {
-    background-color: #67C23A; 
+    background-color: #67C23A;
   }
-  
+
   .status-dot.disconnected {
-    background-color: #F56C6C; 
+    background-color: #F56C6C;
   }
   .connected-font{
-    color: #28613e;
+    color: #67C23A;
   }
   .disconnected-font{
-    color: #9f3535;
+    color: #F56C6C;
   }
   .home-bottom-box{
     display: flex;
     gap: 10px;
-    
+
   }
   .home-bottom-box-left{
     width: 33%;
@@ -973,11 +964,11 @@ onUnmounted(() => {
   }
   .home-bottom-box-left-title{
     background: rgba(0,124,247,0.05);
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 15px;
+    border-radius: 6px 6px 6px 6px;
+    font-weight: 500;
+    font-size: 18px;
     color: rgba(0,0,0,0.9);
-    padding: 10px 12px;
+    padding: 10px;
   }
   .formclass{
     display: flex;
@@ -1000,7 +991,7 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   height: 100%;
-  position: relative; 
+  position: relative;
   .circle-bg {
     width: 100px;
     height: 100px;
@@ -1018,10 +1009,10 @@ onUnmounted(() => {
   .temperature-value {
       font-weight: bold;
       font-size: 24px;
-      color: rgba(0, 0, 0, 0.9); 
+      color: rgba(0, 0, 0, 0.9);
   }
   .wdjmar{
-    margin-left:110px; 
+    margin-left:110px;
     margin-top: 30px;
   }
   .temperature-unit {
@@ -1047,11 +1038,11 @@ onUnmounted(() => {
   }
 
   .system-segment {
-    background-color: rgba(0, 199, 199, 1); 
+    background-color: rgba(0, 199, 199, 1);
   }
 
   .used-segment {
-    background-color: rgba(0, 124, 247, 1); 
+    background-color: rgba(0, 124, 247, 1);
   }
 
   .available-segment {
@@ -1097,9 +1088,9 @@ onUnmounted(() => {
   }
 
   .legend-value {
-    font-weight: 600;
-    font-size: 17px;
-    color: rgba(0,0,0,0.9);
+    font-weight: 500;
+    font-size: 20px;
+    color: #000000;
     margin-left:6px ;
   }
   .hrr{
@@ -1135,7 +1126,7 @@ onUnmounted(() => {
   .memory-status {
   position: absolute;
   bottom: 44px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   color: #FFFFFF;
   }
@@ -1164,7 +1155,7 @@ onUnmounted(() => {
     margin-left:24px ;
   }
   .network-container {
-    position: relative; 
+    position: relative;
     width: 100%;
     padding: 0px 32px;
     background: #FFFFFF;
@@ -1180,7 +1171,7 @@ onUnmounted(() => {
   transform: translateY(-50%);
   z-index: 10;
   padding: 0 6px;
-  
+
   .nav-button {
     width: 32px;
     height: 32px;
@@ -1206,63 +1197,41 @@ onUnmounted(() => {
     flex: 1;
     min-width: calc(50% - 5px);
     transition: transform 0.3s ease;
-    
+
     &.single-item {
       min-width: 100%;
     }
   }
   }
-  .restart-dialog .el-dialog__footer{
-    padding: 10px 20px 18px;
-    text-align: right;
+  .el-dialog__footer{
+    width: 100%;
+    padding: 10px;
+    border-top:1px solid #eee ;
   }
-  .restart-dialog .el-dialog__title{
-    font-weight: 600;
+  .el-dialog__title{
+    font-weight: 400;
     font-size: 16px;
     color: #1D2129;
-    line-height: 24px;
-  }
-  .restart-dialog .el-dialog__header{
-    padding-bottom: 10px;
-  }
-  .restart-confirm{
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 8px 4px 4px;
-    .restart-confirm-icon{
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-    .restart-confirm-text{
-      margin: 0;
-      font-size: 14px;
-      line-height: 22px;
-      color: rgba(0,0,0,0.85);
-    }
   }
   .no-data-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   height: 100%;
-  
+
   .no-data-image {
     width: 100px;
     height: 80px;
   }
-  
+
   .no-data-text {
     font-size: 14px;
     color: rgba(0, 0, 0, 0.45);
   }
   }
-  .restart-dialog .el-dialog__header{
-    padding: 18px 20px 6px;
-    margin-right: 0;
-  }
-  .restart-dialog .el-dialog__body{
-    padding: 0 20px;
+  .el-dialog__header{
+    border-bottom: 1px solid #eee;
+    padding: 10px 0px;
   }
  }
 </style>

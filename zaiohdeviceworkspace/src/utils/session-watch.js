@@ -1,12 +1,10 @@
+import { demoEnabled, demoFetch } from '@/demo/data';
+
 const CHECK_INTERVAL_MS = 5000;
 const REQUEST_TIMEOUT_MS = 10000;
 
 // 公共布局持有一个检查器；仅明确401或本地注销才退出，不把网络故障当作会话过期。
-export function startSessionWatch(onExpired, {
-  getToken = () => localStorage.getItem('loginToken'),
-  request = (...args) => fetch(...args),
-  isTokenChange = event => event.key === 'loginToken' || event.key === null
-} = {}) {
+export function startSessionWatch(onExpired) {
   let stopped = false;
   let controller = null;
   let timeout = null;
@@ -29,24 +27,25 @@ export function startSessionWatch(onExpired, {
 
   async function check() {
     if (stopped) return;
-    const token = getToken();
+    const token = localStorage.getItem('loginToken');
     if (!token) {
       expire();
       return;
     }
     if (controller) return;
-    const current = new AbortController();
-    controller = current;
-    timeout = setTimeout(() => current.abort(), REQUEST_TIMEOUT_MS);
+    const request = new AbortController();
+    controller = request;
+    timeout = setTimeout(() => request.abort(), REQUEST_TIMEOUT_MS);
     try {
-      const response = await request('/api/system/info', {
+      const requestFn = demoEnabled ? demoFetch : fetch;
+      const response = await requestFn('/api/system/info', {
         headers: {Authorization: `Bearer ${token}`},
         cache: 'no-store',
-        signal: current.signal
+        signal: request.signal
       });
       // 请求期间可能已在另一标签页重新登录，旧会话响应不能撤销新会话。
-      if (!stopped && !current.signal.aborted && response.status === 401 &&
-          getToken() === token) {
+      if (!stopped && !request.signal.aborted && response.status === 401 &&
+          localStorage.getItem('loginToken') === token) {
         expire();
       }
     } catch {
@@ -62,7 +61,7 @@ export function startSessionWatch(onExpired, {
   }
 
   function onStorage(event) {
-    if (isTokenChange(event)) check();
+    if (event.key === 'loginToken' || event.key === null) check();
   }
 
   window.addEventListener('online', check);

@@ -3,8 +3,8 @@
     <div class="log-box-left">
       <p class="log-box-left-title">日志</p>
       <div class="log-tabs">
-        <div 
-          v-for="tab in tabs" 
+        <div
+          v-for="tab in tabs"
           :key="tab.id"
           class="log-tab"
           :class="{ 'log-tab-active': activeTab === tab.id }"
@@ -19,50 +19,50 @@
           <img src='@/assets/img/left.png' class="left-img"/>
           <p  class="returnFont" >返回</p>
       </div>
-      <!-- 日志文件查询和异常日志查询 --> 
+      <!-- 日志文件查询和异常日志查询 -->
       <div v-if="activeTab === 1 || activeTab === 2">
         <div class="log-top">
 
           <div class="flex">
-            <img src='@/assets/img/icon.png'/> 
+            <img src='@/assets/img/icon.png'/>
             <p class="log-top-font">{{ activeTab === 1 ? '提示：若当前路径非实际日志文件的存储路径，请先修改。' : '异常日志列表' }}
               <span v-if="activeTab === 1" class="updateUrl" @click="openPathDialog">修改存储路径</span>
             </p>
           </div>
           <div><el-button type="primary" @click="handleExport()">导出</el-button></div>
         </div>
-        
-        <el-table 
+
+        <el-table
           ref="tableRef"
-          :data="tableData" 
-          stripe 
+          :data="tableData"
+          stripe
           style="width: 100%;margin-top: 20px"
           @selection-change="handleSelectionChange"
         >
           <el-table-column type="selection" width="55" />
           <el-table-column prop="name" label="文件名称" >
             <template #default="scope">
-              <div class="file-name-container">  
-                <img 
-                  v-if="scope.row.type === 'folder'" 
-                  src='@/assets/img/wjj.png' 
+              <div class="file-name-container">
+                <img
+                  v-if="scope.row.type === 'folder'"
+                  src='@/assets/img/wjj.png'
                 />
-                <img 
-                  v-else-if="scope.row.type === 'file'" 
-                  src='@/assets/img/wj.png' 
+                <img
+                  v-else-if="scope.row.type === 'file'"
+                  src='@/assets/img/wj.png'
                 />
-              <span 
+              <span
                 :class="{ 'folder-name': scope.row.type === 'folder', 'file-name': scope.row.type === 'file' }"
                 :style="{ cursor: scope.row.type === 'folder' ? 'pointer' : 'default' }"
                 @click="handleItemClick(scope.row)"
               >
                 {{ scope.row.name }}
               </span>
-              
+
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="path" label="路径"  />   
+          <el-table-column prop="path" label="路径"  />
           <el-table-column prop="last_modified" label="最新写入时间" />
           <el-table-column label="操作" >
             <template #default="scope">
@@ -71,7 +71,7 @@
             </template>
           </el-table-column>
         </el-table>
-        
+
         <!-- 分页 -->
         <el-pagination
           :current-page="pagination.page"
@@ -107,7 +107,7 @@
             <el-button @click="pathDialogVisible = false">取消</el-button>
             <el-button type="primary" @click="handleSavePath">确认</el-button>
           </span>
-        </template>        
+        </template>
       </el-dialog>
 
       <!-- 内核日志分析/系统日志分析 -->
@@ -115,8 +115,8 @@
         <div class="log-top-box">
           <div class="flex">
               <el-input class="log-top-box-input" :prefix-icon="Search" v-model="searchInfo.search_text" clearable/>
-              <el-tooltip 
-                :content="buttonType.Cc ? '已启用：过滤条件忽略大小写' : '点击启用：过滤条件将忽略大小写'" 
+              <el-tooltip
+                :content="buttonType.Cc ? '已启用：过滤条件忽略大小写' : '点击启用：过滤条件将忽略大小写'"
                 placement="top"
                 effect="light"
               >
@@ -124,9 +124,9 @@
                   Cc
                 </el-button>
               </el-tooltip>
-  
-              <el-tooltip 
-                :content="buttonType.regex ? '已启用：使用正则表达式匹配' : '点击启用：使用正则表达式进行匹配'" 
+
+              <el-tooltip
+                :content="buttonType.regex ? '已启用：使用正则表达式匹配' : '点击启用：使用正则表达式进行匹配'"
                 placement="top"
                 effect="light"
               >
@@ -142,10 +142,10 @@
           <div class="flex">
             <el-button type="danger" @click="handleClear">清除</el-button>
             <el-button type="primary" @click="handleExportRealtimeLog">导出</el-button>
-            
+
           </div>
         </div>
-        
+
       <div v-loading="logLoading" v-if="activeTab === 3" class="log-container">
           <DynamicScroller
             ref="dmesgLogContentRef"
@@ -213,16 +213,16 @@
       </div>
       </div>
       </template>
-      
-      
+
+
     </div>
   </div>
 </template>
 
 <script setup>
-import { storage } from '@/demo/storage';
 import { ref, reactive, onMounted, onUnmounted, watch ,nextTick} from 'vue';
-import { DemoEventSource } from '@/demo/data';
+import {EventSourcePolyfill} from 'event-source-polyfill'
+import { DemoEventSource, demoEnabled } from '@/demo/data'
 import { getList, getView, download, getConfig, setConfig, hilog, dmesg, disconnect, exportRealtimeLog } from "@/api/api.log"
 import { Search ,ArrowDown} from '@element-plus/icons-vue'
 import { ElMessage} from 'element-plus';
@@ -279,7 +279,7 @@ const pathFormRules = reactive({
 
 const uuid=()=>{
   var temp_url = URL.createObjectURL(new Blob());
-  var uuid = temp_url.toString(); 
+  var uuid = temp_url.toString();
   URL.revokeObjectURL(temp_url);
   return uuid.substr(uuid.lastIndexOf("/") + 1);
 }
@@ -292,8 +292,8 @@ const searchInfo =reactive({
 })
 // 按钮状态
 const buttonType = reactive({
-  Cc: true,     
-  regex: false   
+  Cc: true,
+  regex: false
 });
 
 // 多选
@@ -340,7 +340,7 @@ const fetchListData = async () => {
     limit: pagination.limit,
     log_dir: getCurrentLogDir()
   };
-  
+
   const sequence = ++listSequence;
   const res = await getList(params);
   if (sequence !== listSequence) return;
@@ -383,7 +383,7 @@ const getTimestampNumber = () => {
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
   const seconds = String(date.getSeconds()).padStart(2, '0');
-  
+
   return `${year}${month}${day}${hours}${minutes}${seconds}`;
 }
 // 导出日志文件
@@ -398,13 +398,13 @@ const handleExport = async (row) => {
     log_dir: getCurrentLogDir(),
     list: filesToExport.map(file => ({
       name: file.name,
-      type: file.type 
+      type: file.type
     }))
   };
   const deviceId = getdevId() || 'unknown';
   const timestamp = getTimestampNumber();
   const filename = `${deviceId}_${timestamp}_${filesToExport[0].name}${filesToExport.length > 1 || filesToExport[0].type === 'folder' ? '.zip' : ''}`;
-  
+
   const blob = await download(downloadParams);
   if (blob instanceof Blob) {
     const url = window.URL.createObjectURL(blob);
@@ -510,10 +510,10 @@ const handleSavePath = async () => {
   try {
   await pathFormRef.value.validate();
   const res = await setConfig({
-    log_path: pathForm.newPath, 
+    log_path: pathForm.newPath,
     device_id: getdevId() || '',
   });
-  
+
   if (res.code === 0) {
     ElMessage.success('路径配置保存成功');
     pathDialogVisible.value = false;
@@ -529,15 +529,15 @@ const handleSavePath = async () => {
 
 // 获取设备ID
 const getdevId = (() => {
-  return storage.getItem('device_id_cache') || null;
+  return localStorage.getItem('device_id_cache') || null;
 });
 //缓存 正则 区分大小写
 const BUTTON_TYPE_KEY = 'log_button_type';
 const saveButtonTypeToStorage = () => {
-  storage.setItem(BUTTON_TYPE_KEY, JSON.stringify(buttonType)); 
+  localStorage.setItem(BUTTON_TYPE_KEY, JSON.stringify(buttonType));
 };
 const loadButtonTypeFromStorage = () => {
-  const savedType = storage.getItem(BUTTON_TYPE_KEY);
+  const savedType = localStorage.getItem(BUTTON_TYPE_KEY);
   if (savedType) {
     Object.assign(buttonType, JSON.parse(savedType));
   }
@@ -609,12 +609,14 @@ const getSSE=()=>{
 
     // 使用当前访问的地址动态构建 SSE URL
     const baseUrl = window.location.origin;
-    const params = new URLSearchParams({
-      type: searchInfo.type, id: searchInfo.sseId, search_text: searchInfo.search_text,
-      ignore_case: String(buttonType.Cc), use_regex: String(buttonType.regex)
-    });
-    const eventSource = new DemoEventSource(`${baseUrl}/api/sse/connect?${params}`);
-             
+    const url = `${baseUrl}/api/sse/connect?${new URLSearchParams({type:searchInfo.type,id:searchInfo.sseId,search_text:searchInfo.search_text,ignore_case:String(buttonType.Cc),use_regex:String(buttonType.regex)})}`;
+    const eventSource = demoEnabled ? new DemoEventSource(url) : new EventSourcePolyfill(url, {
+                        headers: {
+                            Authorization:'Bearer '+localStorage.loginToken
+                        },
+                        withCredentials: true //// 若需携带 Cookie 或认证头
+                    });
+
     eveSource.value=eventSource
 
     //连接成功回调
@@ -905,30 +907,31 @@ onMounted(() => {
 .log-box{
   width: 100%;
   height: 100%;
-  background: transparent;
-  padding: 0;
+  background: #F2F4F5;
+  padding: 10px;
   border-radius: 12px;
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 .flex{
   display: flex;
 }
 .log-box-left{
   min-width: 200px;
+  border-radius: 4px;
   background: #FFFFFF;
   border-radius: 12px;
 }
 .log-box-left-title{
-  padding: 14px 16px 12px;
+  padding: 6px;
   border-bottom: 1px solid #eee;
   margin: 0;
-  font-weight: 600;
-  font-size: 17px;
-  color: rgba(0,0,0,0.9);
+  font-weight: 400;
+  font-size: 18px;
+  color: #000000;
 }
 .log-tabs {
-  padding: 8px;
+  padding: 6px;
 }
 .log-tab {
   padding: 12px ;
@@ -952,7 +955,7 @@ onMounted(() => {
   flex: 1;
   min-width: 0;
   background: #FFFFFF;
-  padding: 16px 20px;
+  padding: 10px;
   border-radius: 12px;
 }
 .log-top{
@@ -967,7 +970,7 @@ onMounted(() => {
 .log-top-font{
   font-weight: 400;
   font-size: 14px;
-  color: rgba(0,0,0,0.9);    
+  color: rgba(0,0,0,0.9);
   margin-left: 12px;
   margin-bottom: 0;
   align-items: center;
@@ -995,7 +998,7 @@ onMounted(() => {
 .folder-name {
   text-decoration: underline;
   font-weight: 500;
-  color: #409eff; 
+  color: #409eff;
 }
 :deep(.el-table) {
   background-color: rgba(242, 244, 245, 1);
@@ -1012,8 +1015,8 @@ onMounted(() => {
   background-color: rgba(242, 244, 245, 1);
 }
 :deep(.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell){
-   background-color:#FFFFFF ; 
-} 
+   background-color:#FFFFFF ;
+}
 :deep(.el-table th:first-child) {
   border-top-left-radius: 4px;
   border-bottom-left-radius: 4px;
