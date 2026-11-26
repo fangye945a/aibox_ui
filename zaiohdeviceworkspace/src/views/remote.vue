@@ -156,7 +156,8 @@ const loadSettings = async () => {
       return;
     }
     const url = new URL(response.data.url, window.location.origin);
-    if (url.origin !== window.location.origin || !url.pathname.startsWith('/remote-desktop/')) {
+    const expected = new URL('./remote-desktop/index.html', window.location.href);
+    if (url.origin !== window.location.origin || url.pathname !== expected.pathname) {
       throw new Error('远程桌面地址无效');
     }
     connectionId.value = response.data.connection_id;
